@@ -746,7 +746,8 @@ Atualizacao de execucao:
 - Resultado sintetico em 2026-05-03: `FolderScanBenchmarks` ficou em ~1,486 ms para 500 JPEGs e ~5,492 ms para 2.000 JPEGs; `OpenSessionUseCaseBenchmarks` ficou em ~380,1 us para 500 candidatos e ~1,937 ms para 2.000 candidatos; `DecodeTargetCalculatorBenchmarks` ficou em ~115-118 ns.
 - Com esses numeros, abertura progressiva completa nao deve ser priorizada antes do decode real.
 - Fatias 0013/0014 validaram decode JPEG dimensionado, signature probe, taxonomia inicial de erro, `FileShare.ReadWrite | FileShare.Delete`, EXIF orientation 6/8 e guard contra dupla aplicacao de orientation/dimensoes.
-- A proxima prioridade e conectar o resultado de decode ao viewer WinUI (`ImageSource`/`SoftwareBitmapSource`), mostrar a primeira foto, iniciar navegacao visual por setas e implementar fullscreen limpo.
+- A fatia 0015 conectou o resultado de decode ao viewer WinUI (`SoftwareBitmapSource`) e passou a mostrar a primeira foto da sessao sem usar URI direto para arquivo.
+- A proxima prioridade e iniciar navegacao visual por setas, manter cancelamento por troca de foto e implementar fullscreen limpo.
 - Se os benchmarks com JPEGs reais de estudio mostrarem que scan + ordenacao comprometem o alvo de tempo ate primeira imagem, criar uma fatia especifica para `ProgressiveOpenSessionUseCase` ou `SessionOpenHandle`, documentando a diferenca entre "primeira foto por ordem final" e "primeira previsualizacao disponivel".
 
 ### 8.4 Single-instance e reativação por pasta

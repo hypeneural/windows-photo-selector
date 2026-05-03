@@ -54,7 +54,7 @@ Ultima atualizacao: 2026-05-03
 
 - [x] F2-01 - Abrir `PhotoSession` em background a partir de `--folder`.
 - [x] F2-02 - Exibir estado da sessao aberta na UI inicial.
-- [ ] F2-03 - Mostrar primeira foto no viewer.
+- [x] F2-03 - Mostrar primeira foto no viewer.
 - [ ] F2-04 - Navegacao visual por setas.
 - [ ] F2-05 - Fullscreen limpo inicial.
 
@@ -62,7 +62,7 @@ Ultima atualizacao: 2026-05-03
 
 - `ShellExtension` ainda nao tem projeto C++/WinRT. A decisao continua adiada para a fase de menu de contexto.
 - Single-instance ainda nao foi implementado; deve vir antes do menu de contexto do Explorer.
-- Conversao do resultado de decode para `ImageSource`/viewer WinUI ainda esta pendente.
+- Conversao do resultado de decode para `ImageSource`/viewer WinUI ja existe para a primeira foto. Navegacao visual por setas ainda esta pendente.
 - `WindowsDisplayContextService` captura `XamlRoot`, area util e escala de rasterizacao. Identificacao detalhada de monitor/display area fica para a fatia de fullscreen/segunda tela.
 
 ## Ultima validacao
@@ -91,6 +91,12 @@ Ultima atualizacao: 2026-05-03
 - [x] `tools/build.ps1` executado com sucesso apos 0014.
 - [x] `tools/format.ps1` executado com sucesso apos 0014.
 - [x] `tools/test.ps1` executado com sucesso apos 0014: 60 testes.
+- [x] Repositorio Git inicializado, commit inicial criado e branch `main` publicada em `https://github.com/hypeneural/windows-photo-selector.git`.
+- [x] Fatia 0015 conectou decode JPEG dimensionado ao viewer WinUI para a primeira foto.
+- [x] `tools/test.ps1 -Filter "FullyQualifiedName~Imaging|FullyQualifiedName~UiSmoke"` executado com sucesso apos 0015: Imaging 15 testes, UiSmoke 3 testes.
+- [x] `tools/format.ps1` executado com sucesso apos 0015.
+- [x] `tools/test.ps1` executado com sucesso apos 0015: 62 testes.
+- [x] `tools/build.ps1` executado com sucesso apos 0015.
 
 ## Ultima fatia concluida
 
@@ -108,16 +114,17 @@ Ultima atualizacao: 2026-05-03
 - 0012 - Analise aprofundada de repositorios de referencia e ajustes do plano de implementacao.
 - 0013 - Base de decode JPEG seguro com signature probe, taxonomia de erro e teste de file handle.
 - 0014 - Validacao EXIF orientation 6/8 sem dupla aplicacao de rotacao/dimensoes.
+- 0015 - Primeira foto no viewer WinUI usando `ImageDecodeResult` convertido para `SoftwareBitmapSource`.
 
 ## Cobertura atual de testes
 
 - `Core.Tests`: 22 testes.
 - `Application.Tests`: 17 testes.
-- `Imaging.Tests`: 13 testes.
+- `Imaging.Tests`: 15 testes.
 - `Storage.Tests`: 3 testes.
 - `IntegrationTests`: 2 testes.
 - `UiSmokeTests`: 3 testes.
-- Total atual: 60 testes.
+- Total atual: 62 testes.
 
 ## Toolchain validado
 

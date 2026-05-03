@@ -21,6 +21,8 @@ public sealed class MainPageViewModelTests
         Assert.AreEqual("0 JPEGs", viewModel.PhotoCountText);
         Assert.IsFalse(viewModel.HasSession);
         Assert.IsFalse(viewModel.IsLoading);
+        Assert.IsTrue(viewModel.IsHomeVisible);
+        Assert.IsFalse(viewModel.IsViewerVisible);
     }
 
     [TestMethod]
@@ -38,6 +40,12 @@ public sealed class MainPageViewModelTests
         Assert.AreEqual("2 JPEGs", viewModel.PhotoCountText);
         Assert.IsTrue(viewModel.HasSession);
         Assert.IsFalse(viewModel.IsLoading);
+        Assert.AreEqual("IMG_0001.jpg", viewModel.CurrentPhoto?.FileName);
+        Assert.AreEqual("IMG_0001.jpg", viewModel.CurrentFileName);
+        Assert.AreEqual("1 / 2", viewModel.ViewerCounterText);
+        Assert.AreEqual("Aguardando imagem", viewModel.ViewerStatusText);
+        Assert.IsFalse(viewModel.IsHomeVisible);
+        Assert.IsTrue(viewModel.IsViewerVisible);
     }
 
     [TestMethod]
@@ -55,6 +63,9 @@ public sealed class MainPageViewModelTests
         Assert.AreEqual("0 JPEGs", viewModel.PhotoCountText);
         Assert.IsFalse(viewModel.HasSession);
         Assert.IsFalse(viewModel.IsLoading);
+        Assert.IsNull(viewModel.CurrentPhoto);
+        Assert.IsTrue(viewModel.IsHomeVisible);
+        Assert.IsFalse(viewModel.IsViewerVisible);
     }
 
     private static OpenSessionResult CreateSessionResult(params string[] fileNames)

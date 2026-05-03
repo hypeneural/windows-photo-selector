@@ -57,6 +57,41 @@ public sealed class JpegDecodeServiceTests
     }
 
     [TestMethod]
+    public async Task DecodeForDisplayAsyncUsesDecoderDimensionsToAvoidFullRes()
+    {
+        using var folder = TemporaryFolder.Create();
+        var filePath = Path.Combine(folder.Path, "photo.jpg");
+        await JpegTestImage.WriteAsync(filePath, width: 80, height: 40);
+        var displayContext = CreateDisplayContext(displayWidth: 20, displayHeight: 10);
+
+        var result = await new JpegDecodeService().DecodeForDisplayAsync(filePath, displayContext);
+
+        Assert.IsTrue(result.IsSuccess, result.ErrorMessage);
+        Assert.IsLessThan(80, result.PixelWidth);
+        Assert.IsLessThan(40, result.PixelHeight);
+        Assert.HasCount(result.PixelWidth * result.PixelHeight * 4, result.PixelData);
+    }
+
+    [TestMethod]
+    public async Task DecodeForDisplayAsyncRespectsExifOrientation6WithoutDoubleApplyingDimensions()
+    {
+        using var folder = TemporaryFolder.Create();
+        var filePath = Path.Combine(folder.Path, "orientation-display-6.jpg");
+        await JpegTestImage.WriteQuadrantsWithOrientationAsync(filePath, width: 80, height: 40, exifOrientation: 6);
+        var displayContext = CreateDisplayContext(displayWidth: 20, displayHeight: 40);
+
+        var result = await new JpegDecodeService().DecodeForDisplayAsync(filePath, displayContext);
+
+        Assert.IsTrue(result.IsSuccess, result.ErrorMessage);
+        Assert.IsLessThan(80, result.PixelWidth);
+        Assert.IsLessThanOrEqualTo(80, result.PixelHeight);
+        Assert.AreEqual(TestQuadrantColor.Blue, Sample(result, 0.25, 0.25));
+        Assert.AreEqual(TestQuadrantColor.Red, Sample(result, 0.75, 0.25));
+        Assert.AreEqual(TestQuadrantColor.Yellow, Sample(result, 0.25, 0.75));
+        Assert.AreEqual(TestQuadrantColor.Green, Sample(result, 0.75, 0.75));
+    }
+
+    [TestMethod]
     public async Task DecodeAsyncRespectsExifOrientation6WithoutDoubleApplyingDimensions()
     {
         using var folder = TemporaryFolder.Create();
@@ -137,6 +172,18 @@ public sealed class JpegDecodeServiceTests
                 viewerUsableHeightDips: displayHeight,
                 rasterizationScale: 1,
                 isFullscreen: true)));
+    }
+
+    private static DisplayContextSnapshot CreateDisplayContext(int displayWidth, int displayHeight)
+    {
+        return new DisplayContextSnapshot(
+            "test-display",
+            effectiveWidthDips: displayWidth,
+            effectiveHeightDips: displayHeight,
+            viewerUsableWidthDips: displayWidth,
+            viewerUsableHeightDips: displayHeight,
+            rasterizationScale: 1,
+            isFullscreen: true);
     }
 
     private static TestQuadrantColor Sample(ImageDecodeResult result, double xRatio, double yRatio)

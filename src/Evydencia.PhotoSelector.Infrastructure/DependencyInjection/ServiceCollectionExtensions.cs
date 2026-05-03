@@ -2,6 +2,7 @@ using Evydencia.PhotoSelector.Application.Activation;
 using Evydencia.PhotoSelector.Application.Abstractions;
 using Evydencia.PhotoSelector.Application.UseCases;
 using Evydencia.PhotoSelector.Core.Sessions;
+using Evydencia.PhotoSelector.Imaging.Decode;
 using Evydencia.PhotoSelector.Imaging.Sizing;
 using Evydencia.PhotoSelector.Storage.Filesystem;
 using Microsoft.Extensions.DependencyInjection;
@@ -16,6 +17,7 @@ public static class ServiceCollectionExtensions
 
         services.AddSingleton<PhotoSessionFactory>();
         services.AddSingleton<DecodeTargetCalculator>();
+        services.AddSingleton<JpegDecodeService>();
         services.AddSingleton<FolderLaunchArgumentsParser>();
 
         services.AddTransient<IFolderScanner, FileSystemFolderScanner>();

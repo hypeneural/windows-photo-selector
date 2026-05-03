@@ -7,10 +7,45 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 
-    <Grid
-        Padding="48"
-        Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+    <Grid Background="#0B0B0D">
+        <Grid
+            x:Name="ViewerHost"
+            Background="#0B0B0D">
+            <Image
+                x:Name="CurrentPhotoImage"
+                AutomationProperties.Name="{x:Bind ViewModel.CurrentImageAutomationName, Mode=OneWay}"
+                Stretch="Uniform" />
+
+            <Border
+                Margin="24"
+                Padding="14,10"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Bottom"
+                Background="#B0000000"
+                CornerRadius="6">
+                <StackPanel Spacing="2">
+                    <TextBlock
+                        FontSize="15"
+                        FontWeight="SemiBold"
+                        Foreground="White"
+                        Text="{x:Bind ViewModel.CurrentFileName, Mode=OneWay}" />
+                    <StackPanel
+                        Orientation="Horizontal"
+                        Spacing="12">
+                        <TextBlock
+                            Foreground="#D0D0D0"
+                            Text="{x:Bind ViewModel.ViewerCounterText, Mode=OneWay}" />
+                        <TextBlock
+                            Foreground="#D0D0D0"
+                            Text="{x:Bind ViewModel.ViewerStatusText, Mode=OneWay}" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Grid>
+
         <StackPanel
+            x:Name="HomeHost"
+            Padding="48"
             MaxWidth="720"
             HorizontalAlignment="Center"
             VerticalAlignment="Center"

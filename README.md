@@ -128,11 +128,10 @@ Estado ja validado:
 - decode JPEG dimensionado;
 - EXIF orientation 6/8 validado;
 - decode sem prender file handle.
+- primeira foto exibida no viewer WinUI via `SoftwareBitmapSource`.
 
 Proximas fatias planejadas:
 
-- converter `ImageDecodeResult` para `ImageSource`/viewer WinUI;
-- mostrar a primeira foto no viewer;
 - navegacao visual por setas;
 - fullscreen limpo;
 - single-instance antes do menu de contexto do Explorer;
