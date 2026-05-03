@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <PackageReference Include="BenchmarkDotNet" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Evydencia.PhotoSelector.Core\Evydencia.PhotoSelector.Core.csproj" />
+    <ProjectReference Include="..\..\src\Evydencia.PhotoSelector.Application\Evydencia.PhotoSelector.Application.csproj" />
+    <ProjectReference Include="..\..\src\Evydencia.PhotoSelector.Storage\Evydencia.PhotoSelector.Storage.csproj" />
+    <ProjectReference Include="..\..\src\Evydencia.PhotoSelector.Imaging\Evydencia.PhotoSelector.Imaging.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>

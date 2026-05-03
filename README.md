@@ -1,0 +1,163 @@
+# Evydencia Escolher Fotos
+
+Aplicativo Windows nativo para selecao local de fotos por exclusao no fluxo do Estudio Evydencia.
+
+O produto nao e uma galeria generica. A V1 esta focada em abrir uma pasta de sessao, mostrar JPEGs com alta qualidade, navegar rapidamente por teclado e remover da selecao as fotos que o cliente nao quer.
+
+## Escopo V1
+
+Implementar:
+
+- local-first e offline;
+- JPEG apenas (`.jpg` e `.jpeg`);
+- abertura de pasta por argumento `--folder`;
+- abertura manual de pasta pelo app;
+- viewer limpo, preparado para fullscreen;
+- navegacao por teclado;
+- `Delete` com recuperacao local;
+- `Ctrl+Z`;
+- journal JSONL por sessao;
+- logs estruturados;
+- decode JPEG dimensionado;
+- EXIF orientation;
+- cache/prefetch;
+- menu de contexto do Windows.
+
+Fora da V1:
+
+- API Laravel;
+- login;
+- PDV;
+- venda/pedido/financeiro;
+- upload;
+- RAW;
+- IA;
+- Electron;
+- WebView como base do viewer.
+
+## Stack
+
+- .NET 10
+- Windows App SDK 2.0.1
+- WinUI 3
+- C#
+- WIC/WinRT Imaging para decode JPEG na V1
+- MetadataExtractor para metadados JPEG/EXIF
+- Serilog para logs
+- Microsoft.Data.Sqlite para estado local derivado
+- JSONL para journal append-only
+
+Win2D/Direct2D fica planejado como evolucao atras de abstracoes, nao como dependencia obrigatoria da primeira fatia do viewer.
+
+## Estrutura
+
+```text
+/src
+  /Evydencia.PhotoSelector.App
+  /Evydencia.PhotoSelector.Application
+  /Evydencia.PhotoSelector.Core
+  /Evydencia.PhotoSelector.Imaging
+  /Evydencia.PhotoSelector.Storage
+  /Evydencia.PhotoSelector.Infrastructure
+  /Evydencia.PhotoSelector.Contracts
+  /Evydencia.PhotoSelector.Launcher
+  /Evydencia.PhotoSelector.ShellExtension
+
+/tests
+  /Evydencia.PhotoSelector.Core.Tests
+  /Evydencia.PhotoSelector.Application.Tests
+  /Evydencia.PhotoSelector.Imaging.Tests
+  /Evydencia.PhotoSelector.Storage.Tests
+  /Evydencia.PhotoSelector.IntegrationTests
+  /Evydencia.PhotoSelector.UiSmokeTests
+
+/benchmarks
+/docs
+/tools
+/packaging
+```
+
+## Comandos
+
+Build:
+
+```powershell
+.\tools\build.ps1
+```
+
+Testes:
+
+```powershell
+.\tools\test.ps1
+```
+
+Testes por filtro:
+
+```powershell
+.\tools\test.ps1 -Filter "FullyQualifiedName~Imaging"
+```
+
+Formatacao:
+
+```powershell
+.\tools\format.ps1
+```
+
+Benchmarks:
+
+```powershell
+.\tools\benchmarks.ps1
+```
+
+## Status atual
+
+Consulte o progresso de execucao em:
+
+- `docs/execution-progress.md`
+
+Estado ja validado:
+
+- solution scaffoldada;
+- camada `Application` criada;
+- dominio minimo de sessao/navegacao criado;
+- scanner progressivo com `Directory.EnumerateFiles`;
+- `DisplayContext` e `DecodeTargetCalculator`;
+- abertura por argumento `--folder`;
+- estado inicial da sessao na UI;
+- benchmarks iniciais;
+- decode JPEG dimensionado;
+- EXIF orientation 6/8 validado;
+- decode sem prender file handle.
+
+Proximas fatias planejadas:
+
+- converter `ImageDecodeResult` para `ImageSource`/viewer WinUI;
+- mostrar a primeira foto no viewer;
+- navegacao visual por setas;
+- fullscreen limpo;
+- single-instance antes do menu de contexto do Explorer;
+- delete/undo robusto.
+
+## Documentacao principal
+
+Leia primeiro:
+
+- `AGENTS.md`
+- `PLANS.md`
+- `docs/evydencia-escolher-fotos-plano-implementacao.md`
+- `docs/execution-progress.md`
+
+ADRs ficam em:
+
+- `docs/adr`
+
+## Regras de desenvolvimento
+
+- V1 deve continuar offline e JPEG-only.
+- Nao adicionar API, login, PDV, upload, RAW, IA, Electron ou WebView.
+- Nao bloquear a UI thread com scan, decode, cache, move de arquivo ou journal pesado.
+- Nao decodificar JPEG full-res no modo fit normal.
+- Nao manter `FileStream` vivo depois do decode.
+- `Core` nao depende de WinUI, Storage, Imaging, Shell, logs ou HTTP.
+- `Application` orquestra casos de uso e mantem ViewModels finos.
+- `ShellExtension` e `Launcher` devem permanecer minimos.

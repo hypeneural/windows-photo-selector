@@ -1,0 +1,34 @@
+#:schema https://developers.openai.com/codex/config-schema.json
+
+# Project-scoped Codex config. Codex loads this only for trusted projects.
+# Keep repo behavior in AGENTS.md, PLANS.md and the local skill.
+
+project_doc_max_bytes = 32768
+project_root_markers = ["AGENTS.md", "Evydencia.PhotoSelector.sln", ".git"]
+web_search = "cached"
+personality = "pragmatic"
+
+[profiles.plan]
+plan_mode_reasoning_effort = "high"
+model_reasoning_effort = "high"
+model_verbosity = "medium"
+web_search = "cached"
+personality = "pragmatic"
+
+[profiles.implementation]
+model_reasoning_effort = "medium"
+model_verbosity = "medium"
+web_search = "cached"
+personality = "pragmatic"
+
+[profiles.review]
+model_reasoning_effort = "high"
+model_verbosity = "medium"
+web_search = "cached"
+personality = "pragmatic"
+
+[profiles.quickfix]
+model_reasoning_effort = "low"
+model_verbosity = "low"
+web_search = "cached"
+personality = "pragmatic"

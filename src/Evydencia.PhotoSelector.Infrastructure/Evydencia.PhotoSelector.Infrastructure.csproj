@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Evydencia.PhotoSelector.Application\Evydencia.PhotoSelector.Application.csproj" />
+    <ProjectReference Include="..\Evydencia.PhotoSelector.Core\Evydencia.PhotoSelector.Core.csproj" />
+    <ProjectReference Include="..\Evydencia.PhotoSelector.Imaging\Evydencia.PhotoSelector.Imaging.csproj" />
+    <ProjectReference Include="..\Evydencia.PhotoSelector.Storage\Evydencia.PhotoSelector.Storage.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>

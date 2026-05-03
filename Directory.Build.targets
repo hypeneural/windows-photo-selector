@@ -1,0 +1,5 @@
+<Project>
+  <Target Name="EvydenciaBuildInfo" BeforeTargets="BeforeBuild" Condition="'$(EvydenciaShowBuildInfo)' == 'true'">
+    <Message Importance="high" Text="Building $(MSBuildProjectName) for $(TargetFramework)" />
+  </Target>
+</Project>

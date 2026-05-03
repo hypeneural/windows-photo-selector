@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "Evydencia.PhotoSelector.App (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "Evydencia.PhotoSelector.App (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}
