@@ -2,10 +2,15 @@ using Evydencia.PhotoSelector.App.Display;
 using Evydencia.PhotoSelector.App.Imaging;
 using Evydencia.PhotoSelector.App.ViewModels;
 using Evydencia.PhotoSelector.Application.Activation;
+using Evydencia.PhotoSelector.Application.Models;
+using Evydencia.PhotoSelector.Application.UseCases;
+using Evydencia.PhotoSelector.Core.Sessions;
 using Evydencia.PhotoSelector.Imaging.Decode;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Input;
+using Windows.System;
 
 namespace Evydencia.PhotoSelector.App;
 
@@ -14,6 +19,7 @@ namespace Evydencia.PhotoSelector.App;
 /// </summary>
 public sealed partial class MainPage : Page, IDisposable
 {
+    private PhotoSession? _currentSession;
     private CancellationTokenSource? _imageLoadCancellation;
 
     public MainPage()
@@ -43,9 +49,59 @@ public sealed partial class MainPage : Page, IDisposable
             SyncVisualState();
             if (result?.Status == OpenFolderFromArgumentsStatus.Opened)
             {
+                _currentSession = result.SessionResult?.Session;
+                ViewerHost.Focus(FocusState.Programmatic);
                 await LoadCurrentPhotoAsync(app);
             }
         }
+    }
+
+    private async void OnViewerKeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        if (Microsoft.UI.Xaml.Application.Current is not App app || _currentSession is null)
+        {
+            return;
+        }
+
+        var previousPhotoId = ViewModel.CurrentPhoto?.Id;
+        var navigationResult = e.Key switch
+        {
+            VirtualKey.Right => app.Services
+                .GetRequiredService<NavigateNextPhotoUseCase>()
+                .Execute(_currentSession),
+            VirtualKey.Space => app.Services
+                .GetRequiredService<NavigateNextPhotoUseCase>()
+                .Execute(_currentSession),
+            VirtualKey.Left => app.Services
+                .GetRequiredService<NavigatePreviousPhotoUseCase>()
+                .Execute(_currentSession),
+            _ => null
+        };
+
+        if (navigationResult is null)
+        {
+            return;
+        }
+
+        e.Handled = true;
+        if (ViewModel.HasCurrentImage && navigationResult.CurrentPhoto?.Id == previousPhotoId)
+        {
+            ViewModel.ApplyNavigation(navigationResult);
+            SyncVisualState();
+            ViewerHost.Focus(FocusState.Programmatic);
+            return;
+        }
+
+        await NavigateToAsync(app, navigationResult);
+    }
+
+    private async Task NavigateToAsync(App app, NavigationResult navigationResult)
+    {
+        ViewModel.ApplyNavigation(navigationResult);
+        CurrentPhotoImage.Source = null;
+        SyncVisualState();
+        ViewerHost.Focus(FocusState.Programmatic);
+        await LoadCurrentPhotoAsync(app);
     }
 
     private async Task LoadCurrentPhotoAsync(App app)

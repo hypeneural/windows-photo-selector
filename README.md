@@ -129,10 +129,10 @@ Estado ja validado:
 - EXIF orientation 6/8 validado;
 - decode sem prender file handle.
 - primeira foto exibida no viewer WinUI via `SoftwareBitmapSource`.
+- navegacao visual inicial por `Right`, `Left` e `Space`.
 
 Proximas fatias planejadas:
 
-- navegacao visual por setas;
 - fullscreen limpo;
 - single-instance antes do menu de contexto do Explorer;
 - delete/undo robusto.

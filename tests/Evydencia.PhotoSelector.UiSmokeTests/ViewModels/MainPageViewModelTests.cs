@@ -1,6 +1,7 @@
 using Evydencia.PhotoSelector.App.ViewModels;
 using Evydencia.PhotoSelector.Application.Activation;
 using Evydencia.PhotoSelector.Application.Models;
+using Evydencia.PhotoSelector.Application.UseCases;
 using Evydencia.PhotoSelector.Core.Scanning;
 using Evydencia.PhotoSelector.Core.Sessions;
 
@@ -66,6 +67,27 @@ public sealed class MainPageViewModelTests
         Assert.IsNull(viewModel.CurrentPhoto);
         Assert.IsTrue(viewModel.IsHomeVisible);
         Assert.IsFalse(viewModel.IsViewerVisible);
+    }
+
+    [TestMethod]
+    public async Task ApplyNavigationUpdatesCurrentPhotoAndCounter()
+    {
+        var viewModel = new MainPageViewModel();
+        var sessionResult = CreateSessionResult("IMG_0001.jpg", "IMG_0002.jpg", "IMG_0003.jpg");
+        var result = OpenFolderFromArgumentsResult.Opened(
+            new FolderLaunchArguments("C:\\Sessao Cliente", "launcher"),
+            sessionResult);
+        await viewModel.LoadInitialSessionAsync(Task.FromResult(result));
+
+        var navigationResult = new NavigateNextPhotoUseCase().Execute(sessionResult.Session);
+
+        viewModel.ApplyNavigation(navigationResult);
+
+        Assert.AreEqual("IMG_0002.jpg", viewModel.CurrentPhoto?.FileName);
+        Assert.AreEqual("IMG_0002.jpg", viewModel.CurrentFileName);
+        Assert.AreEqual("2 / 3", viewModel.ViewerCounterText);
+        Assert.AreEqual("Aguardando imagem", viewModel.ViewerStatusText);
+        Assert.IsFalse(viewModel.HasCurrentImage);
     }
 
     private static OpenSessionResult CreateSessionResult(params string[] fileNames)

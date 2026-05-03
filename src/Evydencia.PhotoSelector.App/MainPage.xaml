@@ -10,7 +10,9 @@
     <Grid Background="#0B0B0D">
         <Grid
             x:Name="ViewerHost"
-            Background="#0B0B0D">
+            Background="#0B0B0D"
+            IsTabStop="True"
+            KeyDown="OnViewerKeyDown">
             <Image
                 x:Name="CurrentPhotoImage"
                 AutomationProperties.Name="{x:Bind ViewModel.CurrentImageAutomationName, Mode=OneWay}"

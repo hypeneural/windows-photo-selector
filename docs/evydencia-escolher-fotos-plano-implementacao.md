@@ -747,7 +747,8 @@ Atualizacao de execucao:
 - Com esses numeros, abertura progressiva completa nao deve ser priorizada antes do decode real.
 - Fatias 0013/0014 validaram decode JPEG dimensionado, signature probe, taxonomia inicial de erro, `FileShare.ReadWrite | FileShare.Delete`, EXIF orientation 6/8 e guard contra dupla aplicacao de orientation/dimensoes.
 - A fatia 0015 conectou o resultado de decode ao viewer WinUI (`SoftwareBitmapSource`) e passou a mostrar a primeira foto da sessao sem usar URI direto para arquivo.
-- A proxima prioridade e iniciar navegacao visual por setas, manter cancelamento por troca de foto e implementar fullscreen limpo.
+- A fatia 0016 iniciou navegacao visual por `Right`, `Left` e `Space`, mantendo cancelamento do decode anterior a cada troca.
+- A proxima prioridade e implementar fullscreen limpo inicial e, em seguida, entrar em Delete/Undo robusto.
 - Se os benchmarks com JPEGs reais de estudio mostrarem que scan + ordenacao comprometem o alvo de tempo ate primeira imagem, criar uma fatia especifica para `ProgressiveOpenSessionUseCase` ou `SessionOpenHandle`, documentando a diferenca entre "primeira foto por ordem final" e "primeira previsualizacao disponivel".
 
 ### 8.4 Single-instance e reativação por pasta

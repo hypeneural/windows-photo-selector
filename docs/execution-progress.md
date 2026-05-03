@@ -55,14 +55,14 @@ Ultima atualizacao: 2026-05-03
 - [x] F2-01 - Abrir `PhotoSession` em background a partir de `--folder`.
 - [x] F2-02 - Exibir estado da sessao aberta na UI inicial.
 - [x] F2-03 - Mostrar primeira foto no viewer.
-- [ ] F2-04 - Navegacao visual por setas.
+- [x] F2-04 - Navegacao visual por setas.
 - [ ] F2-05 - Fullscreen limpo inicial.
 
 ## Bloqueios atuais
 
 - `ShellExtension` ainda nao tem projeto C++/WinRT. A decisao continua adiada para a fase de menu de contexto.
 - Single-instance ainda nao foi implementado; deve vir antes do menu de contexto do Explorer.
-- Conversao do resultado de decode para `ImageSource`/viewer WinUI ja existe para a primeira foto. Navegacao visual por setas ainda esta pendente.
+- Conversao do resultado de decode para `ImageSource`/viewer WinUI ja existe para a primeira foto, com navegacao visual inicial por `Right`, `Left` e `Space`.
 - `WindowsDisplayContextService` captura `XamlRoot`, area util e escala de rasterizacao. Identificacao detalhada de monitor/display area fica para a fatia de fullscreen/segunda tela.
 
 ## Ultima validacao
@@ -97,6 +97,11 @@ Ultima atualizacao: 2026-05-03
 - [x] `tools/format.ps1` executado com sucesso apos 0015.
 - [x] `tools/test.ps1` executado com sucesso apos 0015: 62 testes.
 - [x] `tools/build.ps1` executado com sucesso apos 0015.
+- [x] Fatia 0016 implementou navegacao visual por `Right`, `Left` e `Space`.
+- [x] `tools/test.ps1 -Filter "FullyQualifiedName~Application|FullyQualifiedName~UiSmoke"` executado com sucesso apos 0016: Application 17 testes, UiSmoke 4 testes.
+- [x] `tools/build.ps1` executado com sucesso apos 0016.
+- [x] `tools/format.ps1` executado com sucesso apos 0016.
+- [x] `tools/test.ps1` executado com sucesso apos 0016: 63 testes.
 
 ## Ultima fatia concluida
 
@@ -115,6 +120,7 @@ Ultima atualizacao: 2026-05-03
 - 0013 - Base de decode JPEG seguro com signature probe, taxonomia de erro e teste de file handle.
 - 0014 - Validacao EXIF orientation 6/8 sem dupla aplicacao de rotacao/dimensoes.
 - 0015 - Primeira foto no viewer WinUI usando `ImageDecodeResult` convertido para `SoftwareBitmapSource`.
+- 0016 - Navegacao visual por setas/espaco no viewer WinUI com cancelamento de decode anterior.
 
 ## Cobertura atual de testes
 
@@ -123,8 +129,8 @@ Ultima atualizacao: 2026-05-03
 - `Imaging.Tests`: 15 testes.
 - `Storage.Tests`: 3 testes.
 - `IntegrationTests`: 2 testes.
-- `UiSmokeTests`: 3 testes.
-- Total atual: 62 testes.
+- `UiSmokeTests`: 4 testes.
+- Total atual: 63 testes.
 
 ## Toolchain validado
 

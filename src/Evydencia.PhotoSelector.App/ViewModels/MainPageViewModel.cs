@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using Evydencia.PhotoSelector.Application.Activation;
+using Evydencia.PhotoSelector.Application.Models;
 using Evydencia.PhotoSelector.Core.Photos;
 
 namespace Evydencia.PhotoSelector.App.ViewModels;
@@ -158,6 +159,16 @@ public sealed class MainPageViewModel : INotifyPropertyChanged
             : message;
     }
 
+    public void ApplyNavigation(NavigationResult result)
+    {
+        ArgumentNullException.ThrowIfNull(result);
+
+        ApplyCurrentPhoto(
+            result.CurrentPhoto,
+            result.CurrentIndex,
+            result.ActiveCount);
+    }
+
     private void ApplyResult(OpenFolderFromArgumentsResult result)
     {
         switch (result.Status)
@@ -186,16 +197,10 @@ public sealed class MainPageViewModel : INotifyPropertyChanged
         DetailText = string.IsNullOrWhiteSpace(folderName) ? folderPath : folderName;
         PhotoCountText = FormatPhotoCount(count);
         HasSession = true;
-        CurrentPhoto = currentPhoto;
-        HasCurrentImage = false;
-        CurrentFileName = currentPhoto?.FileName ?? string.Empty;
-        CurrentImageAutomationName = string.IsNullOrWhiteSpace(CurrentFileName)
-            ? "Foto atual"
-            : $"Foto atual {CurrentFileName}";
-        ViewerCounterText = currentPhoto is null || session is null
-            ? string.Empty
-            : $"1 / {session.ActiveCount}";
-        ViewerStatusText = currentPhoto is null ? "Nenhum JPEG encontrado" : "Aguardando imagem";
+        ApplyCurrentPhoto(
+            currentPhoto,
+            session?.CurrentIndex ?? 0,
+            session?.ActiveCount ?? 0);
         IsViewerVisible = true;
         IsHomeVisible = false;
     }
@@ -235,6 +240,20 @@ public sealed class MainPageViewModel : INotifyPropertyChanged
         IsImageLoading = false;
         IsViewerVisible = false;
         IsHomeVisible = true;
+    }
+
+    private void ApplyCurrentPhoto(PhotoItem? photo, int currentIndex, int activeCount)
+    {
+        CurrentPhoto = photo;
+        HasCurrentImage = false;
+        CurrentFileName = photo?.FileName ?? string.Empty;
+        CurrentImageAutomationName = string.IsNullOrWhiteSpace(CurrentFileName)
+            ? "Foto atual"
+            : $"Foto atual {CurrentFileName}";
+        ViewerCounterText = photo is null || activeCount <= 0
+            ? string.Empty
+            : $"{Math.Clamp(currentIndex + 1, 1, activeCount)} / {activeCount}";
+        ViewerStatusText = photo is null ? "Nenhum JPEG encontrado" : "Aguardando imagem";
     }
 
     private void SetProperty<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)
