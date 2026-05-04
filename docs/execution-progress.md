@@ -96,6 +96,18 @@ Ultima atualizacao: 2026-05-04
 - Cache em memoria LRU e prefetch leve de previews ja existem. Cache em disco, thumbnail/filmstrip, configuracoes, ultimas sessoes, shell extension moderno `IExplorerCommand`, smoke MSIX empacotado e segunda tela seguem pendentes.
 - `WindowsDisplayContextService` captura `XamlRoot`, area util, escala de rasterizacao e estado fullscreen. Identificacao detalhada de monitor/display area fica para a fatia de segunda tela.
 
+## Fila de implementacao do viewer
+
+- [ ] VQ-01 - Atomic image swap para remover tela preta na navegacao.
+- [ ] VQ-04 - Telemetria de `time_to_visible`, cache hit/miss, decode e source creation.
+- [ ] VQ-03 - `ViewerImageSourceCache` no App para reduzir custo de `SoftwareBitmapSource`.
+- [ ] VQ-02 - `ZoomQualityPolicy` e re-decode automatico por tiers de zoom.
+- [ ] VQ-05 - Prefetch direcional/adaptativo e smoke de navegacao rapida.
+- [ ] VQ-06 - Validar fullscreen real em unpackaged, MSIX, `--folder` e menu dev.
+- [ ] VQ-07 - Settings base para delete mode, cache, prefetch, fullscreen e quality mode.
+- [ ] VQ-09 - Spike Win2D/Direct2D isolado.
+- [ ] VQ-08 - Validar MSIX empacotado e implementar ShellExtension/IExplorerCommand moderno.
+
 ## Ultima validacao
 
 - [x] Estrutura de orientacao validada por `.agents/skills/windows-photo-selector/scripts/validate-solution.ps1`.

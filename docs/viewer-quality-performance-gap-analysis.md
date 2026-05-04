@@ -382,6 +382,18 @@ Regra importante:
 
 ## Proximas issues recomendadas
 
+Nota: a lista abaixo descreve os gaps. A ordem operacional atualizada para implementacao esta em `docs/viewer-implementation-backlog.md`. A sequencia aprovada e:
+
+1. VQ-01 - Atomic image swap.
+2. VQ-04 - Telemetria de time-to-visible.
+3. VQ-03 - Cache de `ImageSource` no App.
+4. VQ-02 - Zoom quality ladder.
+5. VQ-05 - Prefetch direcional/adaptativo e smoke de navegacao rapida.
+6. VQ-06 - Fullscreen real.
+7. VQ-07 - Settings base.
+8. VQ-09 - Spike Win2D/Direct2D.
+9. VQ-08 - MSIX/ShellExtension moderno.
+
 ### VQ-01 - Remover tela preta na navegacao
 
 Objetivo:
