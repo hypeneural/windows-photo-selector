@@ -14,6 +14,7 @@ using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
+using Windows.Foundation;
 using Windows.System;
 using Windows.UI.Core;
 
@@ -24,20 +25,40 @@ namespace Evydencia.PhotoSelector.App;
 /// </summary>
 public sealed partial class MainPage : Page, IDisposable
 {
+    private const VirtualKey MainKeyboardMinusKey = (VirtualKey)189;
+    private const VirtualKey MainKeyboardPlusKey = (VirtualKey)187;
+    private const double ViewerDoubleClickMaxDistance = 24.0;
+    private static readonly TimeSpan ViewerOverlayVisibleDuration = TimeSpan.FromSeconds(2);
+    private static readonly TimeSpan ViewerPointerDoubleClickThreshold = TimeSpan.FromMilliseconds(500);
+
+    private const double ViewerPanResetZoomThreshold = ViewerZoomMin + 0.01;
     private const double ViewerZoomMax = 6.0;
     private const double ViewerZoomMin = 1.0;
     private const double ViewerZoomStep = 1.2;
+
+    private readonly DispatcherTimer _viewerOverlayHideTimer = new()
+    {
+        Interval = ViewerOverlayVisibleDuration
+    };
 
     private PhotoSession? _currentSession;
     private bool _fileCommandInProgress;
     private bool _folderActivationInProgress;
     private CancellationTokenSource? _imageLoadCancellation;
+    private bool _isViewerPanning;
+    private DateTimeOffset? _lastViewerClickAt;
+    private Point _lastViewerClickPoint;
+    private Point _lastViewerPanPoint;
+    private double _viewerPanX;
+    private double _viewerPanY;
+    private uint? _viewerPanPointerId;
     private double _viewerZoomFactor = ViewerZoomMin;
 
     public MainPage()
     {
         InitializeComponent();
         RegisterViewerKeyboardAccelerators();
+        _viewerOverlayHideTimer.Tick += OnViewerOverlayHideTimerTick;
         Loaded += OnLoaded;
         Unloaded += OnUnloaded;
     }
@@ -49,6 +70,8 @@ public sealed partial class MainPage : Page, IDisposable
         _imageLoadCancellation?.Cancel();
         _imageLoadCancellation?.Dispose();
         _imageLoadCancellation = null;
+        _viewerOverlayHideTimer.Stop();
+        _viewerOverlayHideTimer.Tick -= OnViewerOverlayHideTimerTick;
         GC.SuppressFinalize(this);
     }
 
@@ -106,7 +129,101 @@ public sealed partial class MainPage : Page, IDisposable
 
         e.Handled = true;
         var scale = delta > 0 ? ViewerZoomStep : 1 / ViewerZoomStep;
-        ApplyViewerZoom(_viewerZoomFactor * scale, showStatus: true);
+        ApplyViewerZoom(_viewerZoomFactor * scale, showStatus: true, pointerPoint.Position);
+        ViewerHost.Focus(FocusState.Programmatic);
+    }
+
+    private void OnViewerPointerPressed(object sender, PointerRoutedEventArgs e)
+    {
+        if (!ViewModel.IsViewerVisible || ViewModel.CurrentPhoto is null)
+        {
+            return;
+        }
+
+        var pointerPoint = e.GetCurrentPoint(ViewerHost);
+        if (TryResetViewerZoomFromPointerDoubleClick(pointerPoint.Position))
+        {
+            e.Handled = true;
+            ViewerHost.Focus(FocusState.Pointer);
+            return;
+        }
+
+        if (_viewerZoomFactor <= ViewerPanResetZoomThreshold
+            || !pointerPoint.Properties.IsLeftButtonPressed)
+        {
+            return;
+        }
+
+        if (!ViewerHost.CapturePointer(e.Pointer))
+        {
+            return;
+        }
+
+        _isViewerPanning = true;
+        _viewerPanPointerId = e.Pointer.PointerId;
+        _lastViewerPanPoint = pointerPoint.Position;
+        e.Handled = true;
+        ViewerHost.Focus(FocusState.Pointer);
+    }
+
+    private void OnViewerPointerMoved(object sender, PointerRoutedEventArgs e)
+    {
+        ShowViewerOverlay();
+
+        if (!_isViewerPanning || _viewerPanPointerId != e.Pointer.PointerId)
+        {
+            return;
+        }
+
+        var pointerPoint = e.GetCurrentPoint(ViewerHost);
+        if (!pointerPoint.Properties.IsLeftButtonPressed)
+        {
+            EndViewerPan();
+            return;
+        }
+
+        _viewerPanX += pointerPoint.Position.X - _lastViewerPanPoint.X;
+        _viewerPanY += pointerPoint.Position.Y - _lastViewerPanPoint.Y;
+        _lastViewerPanPoint = pointerPoint.Position;
+        ApplyViewerTransform();
+        e.Handled = true;
+    }
+
+    private void OnViewerPointerReleased(object sender, PointerRoutedEventArgs e)
+    {
+        if (_viewerPanPointerId == e.Pointer.PointerId)
+        {
+            EndViewerPan();
+            e.Handled = true;
+        }
+    }
+
+    private void OnViewerPointerCanceled(object sender, PointerRoutedEventArgs e)
+    {
+        if (_viewerPanPointerId == e.Pointer.PointerId)
+        {
+            EndViewerPan();
+            e.Handled = true;
+        }
+    }
+
+    private void OnViewerPointerCaptureLost(object sender, PointerRoutedEventArgs e)
+    {
+        if (_viewerPanPointerId == e.Pointer.PointerId)
+        {
+            EndViewerPan(releaseCapture: false);
+        }
+    }
+
+    private void OnViewerDoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
+    {
+        if (_viewerZoomFactor <= ViewerPanResetZoomThreshold)
+        {
+            return;
+        }
+
+        ResetViewerZoom(showStatus: true);
+        e.Handled = true;
         ViewerHost.Focus(FocusState.Programmatic);
     }
 
@@ -121,6 +238,11 @@ public sealed partial class MainPage : Page, IDisposable
         AddViewerKeyboardAccelerator(VirtualKey.Escape);
         AddViewerKeyboardAccelerator(VirtualKey.Home);
         AddViewerKeyboardAccelerator(VirtualKey.End);
+        AddViewerKeyboardAccelerator(VirtualKey.Add);
+        AddViewerKeyboardAccelerator(MainKeyboardPlusKey);
+        AddViewerKeyboardAccelerator(VirtualKey.Subtract);
+        AddViewerKeyboardAccelerator(MainKeyboardMinusKey);
+        AddViewerKeyboardAccelerator(VirtualKey.Number0);
     }
 
     private void AddViewerKeyboardAccelerator(
@@ -169,7 +291,8 @@ public sealed partial class MainPage : Page, IDisposable
             or VirtualKey.F
             or VirtualKey.Escape
             or VirtualKey.Home
-            or VirtualKey.End;
+            or VirtualKey.End
+            || IsViewerZoomShortcut(key);
     }
 
     private async Task HandleViewerShortcutSafelyAsync(VirtualKey key, bool isControlDown)
@@ -191,6 +314,7 @@ public sealed partial class MainPage : Page, IDisposable
         finally
         {
             ViewerHost.Focus(FocusState.Programmatic);
+            ShowViewerOverlay();
         }
     }
 
@@ -208,6 +332,11 @@ public sealed partial class MainPage : Page, IDisposable
         }
 
         if (isControlDown)
+        {
+            return;
+        }
+
+        if (HandleViewerZoomShortcut(key))
         {
             return;
         }
@@ -312,6 +441,7 @@ public sealed partial class MainPage : Page, IDisposable
         if (_fileCommandInProgress)
         {
             ViewModel.SetViewerStatus("Operacao em andamento");
+            ShowViewerOverlay();
             return;
         }
 
@@ -362,6 +492,7 @@ public sealed partial class MainPage : Page, IDisposable
         if (_fileCommandInProgress)
         {
             ViewModel.SetViewerStatus("Operacao em andamento");
+            ShowViewerOverlay();
             return;
         }
 
@@ -416,6 +547,7 @@ public sealed partial class MainPage : Page, IDisposable
         {
             ViewModel.SetViewerStatus("Operacao em andamento");
             SyncVisualState();
+            ShowViewerOverlay();
             return;
         }
 
@@ -434,6 +566,7 @@ public sealed partial class MainPage : Page, IDisposable
             {
                 ViewModel.SetViewerStatus("Sessao atual mantida");
                 SyncVisualState();
+                ShowViewerOverlay();
                 ViewerHost.Focus(FocusState.Programmatic);
                 return;
             }
@@ -556,11 +689,106 @@ public sealed partial class MainPage : Page, IDisposable
         return (state & CoreVirtualKeyStates.Down) == CoreVirtualKeyStates.Down;
     }
 
-    private void ApplyViewerZoom(double zoomFactor, bool showStatus)
+    private bool TryResetViewerZoomFromPointerDoubleClick(Point pointerPosition)
     {
+        var now = DateTimeOffset.UtcNow;
+        var isDoubleClick = _lastViewerClickAt.HasValue
+            && now - _lastViewerClickAt.Value <= ViewerPointerDoubleClickThreshold
+            && GetDistance(_lastViewerClickPoint, pointerPosition) <= ViewerDoubleClickMaxDistance;
+
+        _lastViewerClickAt = now;
+        _lastViewerClickPoint = pointerPosition;
+
+        if (!isDoubleClick || _viewerZoomFactor <= ViewerPanResetZoomThreshold)
+        {
+            return false;
+        }
+
+        _lastViewerClickAt = null;
+        ResetViewerZoom(showStatus: true);
+        return true;
+    }
+
+    private static double GetDistance(Point first, Point second)
+    {
+        var deltaX = second.X - first.X;
+        var deltaY = second.Y - first.Y;
+        return Math.Sqrt((deltaX * deltaX) + (deltaY * deltaY));
+    }
+
+    private void EndViewerPan(bool releaseCapture = true)
+    {
+        _isViewerPanning = false;
+        _viewerPanPointerId = null;
+
+        if (releaseCapture)
+        {
+            ViewerHost.ReleasePointerCaptures();
+        }
+    }
+
+    private bool HandleViewerZoomShortcut(VirtualKey key)
+    {
+        if (!IsViewerZoomShortcut(key))
+        {
+            return false;
+        }
+
+        if (IsViewerZoomInShortcut(key))
+        {
+            ApplyViewerZoom(_viewerZoomFactor * ViewerZoomStep, showStatus: true);
+            return true;
+        }
+
+        if (IsViewerZoomOutShortcut(key))
+        {
+            ApplyViewerZoom(_viewerZoomFactor / ViewerZoomStep, showStatus: true);
+            return true;
+        }
+
+        ResetViewerZoom(showStatus: true);
+        return true;
+    }
+
+    private static bool IsViewerZoomShortcut(VirtualKey key)
+    {
+        return IsViewerZoomInShortcut(key)
+            || IsViewerZoomOutShortcut(key)
+            || key == VirtualKey.Number0;
+    }
+
+    private static bool IsViewerZoomInShortcut(VirtualKey key)
+    {
+        return key == VirtualKey.Add || key == MainKeyboardPlusKey;
+    }
+
+    private static bool IsViewerZoomOutShortcut(VirtualKey key)
+    {
+        return key == VirtualKey.Subtract || key == MainKeyboardMinusKey;
+    }
+
+    private void ApplyViewerZoom(double zoomFactor, bool showStatus, Point? anchorPoint = null)
+    {
+        var previousZoomFactor = _viewerZoomFactor;
         _viewerZoomFactor = Math.Clamp(zoomFactor, ViewerZoomMin, ViewerZoomMax);
-        CurrentPhotoScaleTransform.ScaleX = _viewerZoomFactor;
-        CurrentPhotoScaleTransform.ScaleY = _viewerZoomFactor;
+
+        if (anchorPoint.HasValue
+            && previousZoomFactor > 0
+            && _viewerZoomFactor > ViewerPanResetZoomThreshold
+            && ViewerHost.ActualWidth > 0
+            && ViewerHost.ActualHeight > 0)
+        {
+            KeepViewerAnchorStable(anchorPoint.Value, previousZoomFactor, _viewerZoomFactor);
+        }
+
+        if (_viewerZoomFactor <= ViewerPanResetZoomThreshold)
+        {
+            _viewerPanX = 0;
+            _viewerPanY = 0;
+            EndViewerPan();
+        }
+
+        ApplyViewerTransform();
 
         if (!showStatus)
         {
@@ -571,11 +799,61 @@ public sealed partial class MainPage : Page, IDisposable
             ? string.Empty
             : $"Zoom {Math.Round(_viewerZoomFactor * 100)}%");
         SyncVisualState();
+        ShowViewerOverlay();
     }
 
-    private void ResetViewerZoom()
+    private void KeepViewerAnchorStable(Point anchorPoint, double previousZoomFactor, double nextZoomFactor)
     {
-        ApplyViewerZoom(ViewerZoomMin, showStatus: false);
+        var viewerCenterX = ViewerHost.ActualWidth / 2;
+        var viewerCenterY = ViewerHost.ActualHeight / 2;
+        var pointerOffsetX = anchorPoint.X - viewerCenterX;
+        var pointerOffsetY = anchorPoint.Y - viewerCenterY;
+        var scaleRatio = nextZoomFactor / previousZoomFactor;
+
+        _viewerPanX = pointerOffsetX - (scaleRatio * (pointerOffsetX - _viewerPanX));
+        _viewerPanY = pointerOffsetY - (scaleRatio * (pointerOffsetY - _viewerPanY));
+    }
+
+    private void ApplyViewerTransform()
+    {
+        ClampViewerPan();
+        CurrentPhotoTransform.ScaleX = _viewerZoomFactor;
+        CurrentPhotoTransform.ScaleY = _viewerZoomFactor;
+        CurrentPhotoTransform.TranslateX = _viewerPanX;
+        CurrentPhotoTransform.TranslateY = _viewerPanY;
+    }
+
+    private void ClampViewerPan()
+    {
+        if (_viewerZoomFactor <= ViewerPanResetZoomThreshold)
+        {
+            _viewerPanX = 0;
+            _viewerPanY = 0;
+            return;
+        }
+
+        var maxPanX = Math.Max(0, (ViewerHost.ActualWidth * (_viewerZoomFactor - 1)) / 2);
+        var maxPanY = Math.Max(0, (ViewerHost.ActualHeight * (_viewerZoomFactor - 1)) / 2);
+        _viewerPanX = Math.Clamp(_viewerPanX, -maxPanX, maxPanX);
+        _viewerPanY = Math.Clamp(_viewerPanY, -maxPanY, maxPanY);
+    }
+
+    private void ResetViewerZoom(bool showStatus = false)
+    {
+        _viewerZoomFactor = ViewerZoomMin;
+        _viewerPanX = 0;
+        _viewerPanY = 0;
+        EndViewerPan();
+        ApplyViewerTransform();
+
+        if (!showStatus)
+        {
+            return;
+        }
+
+        ViewModel.SetViewerStatus("Ajustado a tela");
+        SyncVisualState();
+        ShowViewerOverlay();
     }
 
     private async Task LoadCurrentPhotoAsync(App app)
@@ -626,6 +904,7 @@ public sealed partial class MainPage : Page, IDisposable
             CurrentPhotoImage.Source = imageSource;
             ViewModel.CompleteImageLoad();
             SyncVisualState();
+            ShowViewerOverlay();
         }
         catch (OperationCanceledException)
         {
@@ -652,9 +931,48 @@ public sealed partial class MainPage : Page, IDisposable
         ViewerHost.Visibility = ViewModel.IsViewerVisible ? Visibility.Visible : Visibility.Collapsed;
         HomeHost.Visibility = ViewModel.IsHomeVisible ? Visibility.Visible : Visibility.Collapsed;
 
+        if (!ViewModel.IsViewerVisible)
+        {
+            HideViewerOverlay();
+        }
+
         if (!ViewModel.HasCurrentImage)
         {
             CurrentPhotoImage.Source = null;
         }
+    }
+
+    private void OnViewerOverlayHideTimerTick(object? sender, object e)
+    {
+        _viewerOverlayHideTimer.Stop();
+
+        if (ViewModel.IsViewerVisible && ViewModel.HasCurrentImage)
+        {
+            ViewerOverlay.Visibility = Visibility.Collapsed;
+        }
+    }
+
+    private void ShowViewerOverlay(bool autoHide = true)
+    {
+        if (!ViewModel.IsViewerVisible)
+        {
+            return;
+        }
+
+        ViewerOverlay.Visibility = Visibility.Visible;
+
+        if (!autoHide || !ViewModel.HasCurrentImage)
+        {
+            return;
+        }
+
+        _viewerOverlayHideTimer.Stop();
+        _viewerOverlayHideTimer.Start();
+    }
+
+    private void HideViewerOverlay()
+    {
+        _viewerOverlayHideTimer.Stop();
+        ViewerOverlay.Visibility = Visibility.Collapsed;
     }
 }

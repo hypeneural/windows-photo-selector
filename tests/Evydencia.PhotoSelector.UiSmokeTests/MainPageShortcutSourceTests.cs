@@ -18,6 +18,11 @@ public sealed class MainPageShortcutSourceTests
         StringAssert.Contains(source, "AddViewerKeyboardAccelerator(VirtualKey.Escape)");
         StringAssert.Contains(source, "AddViewerKeyboardAccelerator(VirtualKey.Home)");
         StringAssert.Contains(source, "AddViewerKeyboardAccelerator(VirtualKey.End)");
+        StringAssert.Contains(source, "AddViewerKeyboardAccelerator(VirtualKey.Add)");
+        StringAssert.Contains(source, "AddViewerKeyboardAccelerator(MainKeyboardPlusKey)");
+        StringAssert.Contains(source, "AddViewerKeyboardAccelerator(VirtualKey.Subtract)");
+        StringAssert.Contains(source, "AddViewerKeyboardAccelerator(MainKeyboardMinusKey)");
+        StringAssert.Contains(source, "AddViewerKeyboardAccelerator(VirtualKey.Number0)");
     }
 
     [TestMethod]
@@ -46,10 +51,57 @@ public sealed class MainPageShortcutSourceTests
         var xaml = File.ReadAllText(GetMainPageXamlPath());
 
         StringAssert.Contains(xaml, "PointerWheelChanged=\"OnViewerPointerWheelChanged\"");
-        StringAssert.Contains(xaml, "ScaleTransform x:Name=\"CurrentPhotoScaleTransform\"");
+        StringAssert.Contains(xaml, "IsHitTestVisible=\"False\"");
+        StringAssert.Contains(xaml, "CompositeTransform x:Name=\"CurrentPhotoTransform\"");
         StringAssert.Contains(source, "MouseWheelDelta");
         StringAssert.Contains(source, "ApplyViewerZoom");
         StringAssert.Contains(source, "ResetViewerZoom");
+    }
+
+    [TestMethod]
+    public void MainPageSupportsPanningWhenZoomed()
+    {
+        var source = File.ReadAllText(GetMainPageSourcePath());
+        var xaml = File.ReadAllText(GetMainPageXamlPath());
+
+        StringAssert.Contains(xaml, "PointerPressed=\"OnViewerPointerPressed\"");
+        StringAssert.Contains(xaml, "PointerMoved=\"OnViewerPointerMoved\"");
+        StringAssert.Contains(xaml, "PointerReleased=\"OnViewerPointerReleased\"");
+        StringAssert.Contains(xaml, "PointerCanceled=\"OnViewerPointerCanceled\"");
+        StringAssert.Contains(xaml, "PointerCaptureLost=\"OnViewerPointerCaptureLost\"");
+        StringAssert.Contains(source, "CapturePointer(e.Pointer)");
+        StringAssert.Contains(source, "ReleasePointerCaptures()");
+        StringAssert.Contains(source, "CurrentPhotoTransform.TranslateX");
+        StringAssert.Contains(source, "CurrentPhotoTransform.TranslateY");
+        StringAssert.Contains(source, "ClampViewerPan");
+    }
+
+    [TestMethod]
+    public void MainPageSupportsDoubleTapZoomReset()
+    {
+        var source = File.ReadAllText(GetMainPageSourcePath());
+        var xaml = File.ReadAllText(GetMainPageXamlPath());
+
+        StringAssert.Contains(xaml, "DoubleTapped=\"OnViewerDoubleTapped\"");
+        StringAssert.Contains(source, "DoubleTappedRoutedEventArgs");
+        StringAssert.Contains(source, "TryResetViewerZoomFromPointerDoubleClick");
+        StringAssert.Contains(source, "ViewerPointerDoubleClickThreshold");
+        StringAssert.Contains(source, "ResetViewerZoom(showStatus: true)");
+        StringAssert.Contains(source, "Ajustado a tela");
+    }
+
+    [TestMethod]
+    public void MainPageUsesTimedViewerOverlay()
+    {
+        var source = File.ReadAllText(GetMainPageSourcePath());
+        var xaml = File.ReadAllText(GetMainPageXamlPath());
+
+        StringAssert.Contains(xaml, "x:Name=\"ViewerOverlay\"");
+        StringAssert.Contains(source, "DispatcherTimer");
+        StringAssert.Contains(source, "ViewerOverlayVisibleDuration");
+        StringAssert.Contains(source, "OnViewerOverlayHideTimerTick");
+        StringAssert.Contains(source, "ShowViewerOverlay");
+        StringAssert.Contains(source, "ViewerOverlay.Visibility = Visibility.Collapsed");
     }
 
     private static string GetMainPageSourcePath()

@@ -61,6 +61,8 @@ Ultima atualizacao: 2026-05-04
 - [x] F2-05 - Fullscreen limpo inicial.
 - [x] F2-06 - Corrigir atalhos do viewer para nao dependerem de foco no `ViewerHost`.
 - [x] F2-07 - Esconder tooltip de aceleradores e adicionar zoom por roda do mouse.
+- [x] F2-08 - Adicionar pan/arrastar quando a imagem esta com zoom, reset por duplo clique e atalhos `+`, `-`, `0`.
+- [x] F2-09 - Adicionar overlay temporizado no viewer.
 
 ## Fase 3 - Delete e undo robusto
 
@@ -85,10 +87,10 @@ Ultima atualizacao: 2026-05-04
 - Empacotamento dev assinado ja tem scripts para gerar MSIX, confiar certificado em ambiente elevado, instalar/reinstalar e rodar smoke single-instance instalado.
 - Conversao do resultado de decode para `ImageSource`/viewer WinUI ja existe para a primeira foto, com navegacao visual por `Right`, `Left`, `Space`, `Home` e `End`; atalhos do viewer agora usam `KeyboardAccelerator` na pagina e `KeyDown` fica como fallback do `ViewerHost`.
 - Fullscreen inicial ja usa `AppWindow`/`FullScreenPresenter`, `F` alterna, `Esc` sai, e o decode recaptura `DisplayContext` com estado fullscreen.
-- Zoom inicial por roda do mouse ja existe como zoom optico sobre o preview atual; pan refinado, reset por duplo clique, `+`/`-`/`0`/`1` e re-decode full-res para zoom 100% ainda ficam pendentes para UX/performance posterior.
+- Zoom optico sobre o preview atual ja existe por roda do mouse e atalhos `+`/`-`; `0` e duplo clique retornam para fit; pan/arrastar funciona quando a imagem esta ampliada; a imagem ficou `IsHitTestVisible=false` para manter os eventos de ponteiro no `ViewerHost`. O atalho `1` e re-decode full-res para zoom 100% ainda ficam pendentes para a fatia de Imaging/full-res.
 - `FileMoveService` ja move para `_deletadas_evydencia`, restaura, resolve colisao e preserva `LastWriteTimeUtc`; ja esta ligado ao `DeleteCurrentPhotoUseCase`.
 - `DeleteManager`, `DeleteCurrentPhotoUseCase`, `UndoManager` e `UndoLastDeleteUseCase` ja validam `PendingDelete`, `Deleted`, `PendingRestore`, `Restored`, `Missing`, `DeleteFailed`, contadores e navegacao; `JsonlSessionJournalStore` ja registra delete/restore em JSONL; `ReplaySessionJournalUseCase` ja faz replay basico e reconciliacao inicial; os atalhos `Delete` e `Ctrl+Z` ja chamam os use cases reais no viewer.
-- Overlay temporizado, retry visual de falha e fila de comandos para deletes muito rapidos ainda ficam para UX/performance posterior.
+- Overlay temporizado ja esconde status/contador apos atividade. Retry visual de falha e fila de comandos para deletes muito rapidos ainda ficam para UX/performance posterior.
 - Cache/prefetch LRU, thumbnail/filmstrip, configuracoes, ultimas sessoes, shell extension moderno `IExplorerCommand`, smoke MSIX empacotado e segunda tela seguem pendentes.
 - `WindowsDisplayContextService` captura `XamlRoot`, area util, escala de rasterizacao e estado fullscreen. Identificacao detalhada de monitor/display area fica para a fatia de segunda tela.
 
@@ -223,6 +225,12 @@ Ultima atualizacao: 2026-05-04
 - [x] `tools/format.ps1` executado com sucesso apos 0031.
 - [x] `tools/build.ps1` executado com sucesso apos 0031: 0 warnings.
 - [x] `tools/test.ps1` executado com sucesso apos 0031: 128 testes.
+- [x] Fatia 0032 adicionou `CompositeTransform` com pan/drag, reset por duplo clique, atalhos `+`/`-`/`0`, imagem sem hit-test e overlay temporizado por `DispatcherTimer`.
+- [x] Smoke real automatizado validou zoom por teclado `+`, reset por duplo clique e ocultacao temporizada do overlay na pasta real `C:\Users\Usuario\Desktop\bkp geral\BKP 1712\SD 3\DCIM\100CAROL`.
+- [x] `tools/test.ps1 -Filter "FullyQualifiedName~UiSmoke"` executado com sucesso apos 0032: UiSmoke 17 testes.
+- [x] `tools/format.ps1` executado com sucesso apos 0032.
+- [x] `tools/build.ps1` executado com sucesso apos 0032: 0 warnings.
+- [x] `tools/test.ps1` executado com sucesso apos 0032: 131 testes.
 
 ## Ultima fatia concluida
 
@@ -257,6 +265,7 @@ Ultima atualizacao: 2026-05-04
 - 0029 - Preview unpackaged do viewer com pasta real e investigacao do launch empacotado por alias MSIX.
 - 0030 - Atalhos do viewer corrigidos com `KeyboardAccelerator` de pagina, fallback `KeyDown`, `Home`/`End` e smoke manual automatizado de navegacao/delete/undo.
 - 0031 - Tooltip fixo de acelerador ocultado e zoom por roda do mouse implementado no viewer.
+- 0032 - Pan/arrastar em zoom, reset por duplo clique, atalhos `+`/`-`/`0` e overlay temporizado no viewer.
 
 ## Cobertura atual de testes
 
@@ -266,8 +275,8 @@ Ultima atualizacao: 2026-05-04
 - `Storage.Tests`: 16 testes.
 - `IntegrationTests`: 7 testes.
 - `Launcher.Tests`: 7 testes.
-- `UiSmokeTests`: 14 testes.
-- Total atual: 128 testes.
+- `UiSmokeTests`: 17 testes.
+- Total atual: 131 testes.
 
 ## Toolchain validado
 

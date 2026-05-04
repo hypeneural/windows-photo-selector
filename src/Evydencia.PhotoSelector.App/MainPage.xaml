@@ -14,20 +14,28 @@
             AutomationProperties.AutomationId="ViewerHost"
             AutomationProperties.Name="Visualizador de fotos"
             Background="#0B0B0D"
+            DoubleTapped="OnViewerDoubleTapped"
             IsTabStop="True"
             KeyDown="OnViewerKeyDown"
+            PointerCanceled="OnViewerPointerCanceled"
+            PointerCaptureLost="OnViewerPointerCaptureLost"
+            PointerMoved="OnViewerPointerMoved"
+            PointerPressed="OnViewerPointerPressed"
+            PointerReleased="OnViewerPointerReleased"
             PointerWheelChanged="OnViewerPointerWheelChanged">
             <Image
                 x:Name="CurrentPhotoImage"
                 AutomationProperties.Name="{x:Bind ViewModel.CurrentImageAutomationName, Mode=OneWay}"
+                IsHitTestVisible="False"
                 RenderTransformOrigin="0.5,0.5"
                 Stretch="Uniform">
                 <Image.RenderTransform>
-                    <ScaleTransform x:Name="CurrentPhotoScaleTransform" />
+                    <CompositeTransform x:Name="CurrentPhotoTransform" />
                 </Image.RenderTransform>
             </Image>
 
             <Border
+                x:Name="ViewerOverlay"
                 Margin="24"
                 Padding="14,10"
                 HorizontalAlignment="Left"
