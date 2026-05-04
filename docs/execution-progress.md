@@ -28,7 +28,7 @@ Ultima atualizacao: 2026-05-04
 - [ ] F0-10 - Definir metas de performance reais.
 - [x] F0-11 - Validar .NET 10 + Windows App SDK 2.0.1.
 - [x] F0-12 - Implementar single-instance inicial com ativacao por pasta.
-- [ ] F0-19 - Validar single-instance em app registrado/empacotado com duas ativacoes reais. MSIX dev assinado ja e gerado, mas instalacao ainda depende de confiar o certificado em `LocalMachine` ou usar certificado confiavel.
+- [ ] F0-19 - Validar single-instance em app registrado/empacotado com duas ativacoes reais. MSIX dev assinado ja e gerado, mas instalacao ainda depende de confiar o certificado em `LocalMachine\TrustedPeople` ou usar certificado confiavel.
 - [x] F0-13 - Validar decode sem prender file handle.
 - [x] F0-14 - Criar `DisplayContext`.
 - [ ] F0-15 - Validar preview cache sem perda visual.
@@ -192,6 +192,14 @@ Ultima atualizacao: 2026-05-04
 - [x] `tools/build.ps1` executado com sucesso apos 0027: 0 warnings.
 - [x] `tools/test.ps1` executado com sucesso apos 0027: 122 testes.
 - [ ] `tools/smoke-msix-single-instance.ps1` ainda depende do pacote instalado para validar duas ativacoes reais.
+- [x] Fatia 0028 ajustou `trust-msix-dev-cert-admin.ps1` para priorizar `LocalMachine\TrustedPeople`, mantendo `LocalMachine\Root` apenas por `-TrustRoot`.
+- [x] `tools/check-msix-dev-prereqs.ps1` criado e executado: assinatura valida, certificado em `CurrentUser`, ausente em `LocalMachine\TrustedPeople`, pacote nao instalado.
+- [x] Sintaxe PowerShell validada para `check-msix-dev-prereqs`, `trust-msix-dev-cert-admin`, `install-msix-dev`, `package-msix-dev` e `smoke-msix-single-instance`.
+- [x] `tools/trust-msix-dev-cert-admin.ps1` validado em sessao nao elevada apos 0028: falha com instrucao clara para `LocalMachine\TrustedPeople`.
+- [x] `tools/format.ps1` executado com sucesso apos 0028.
+- [x] `tools/build.ps1` executado com sucesso apos 0028: 0 warnings.
+- [x] `tools/test.ps1` executado com sucesso apos 0028: 122 testes.
+- [ ] `Add-AppxPackage` e smoke empacotado seguem bloqueados ate executar trust em PowerShell elevado.
 
 ## Ultima fatia concluida
 
@@ -222,6 +230,7 @@ Ultima atualizacao: 2026-05-04
 - 0025 - Single-instance inicial com redirecionamento antes da janela e reativacao por pasta na instancia principal.
 - 0026 - Validacao de runtime/registro empacotado, `Launcher` minimo e fallback HKCU de menu de contexto de desenvolvimento.
 - 0027 - MSIX dev assinado e scripts de instalacao/smoke para desbloquear validacao single-instance empacotada; F0-19 permanece pendente ate instalar o pacote e passar o smoke.
+- 0028 - Diagnostico de pre-requisitos MSIX dev e ajuste do trust de certificado para `LocalMachine\TrustedPeople`.
 
 ## Cobertura atual de testes
 

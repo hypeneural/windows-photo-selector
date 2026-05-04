@@ -57,6 +57,12 @@ Se o Windows bloquear a instalacao com `0x800B0109`, confie o certificado em Pow
 .\tools\trust-msix-dev-cert-admin.ps1
 ```
 
+Para diagnosticar o estado atual antes de instalar:
+
+```powershell
+.\tools\check-msix-dev-prereqs.ps1
+```
+
 Depois instale ou reinstale o pacote:
 
 ```powershell
@@ -73,7 +79,7 @@ O item moderno com `IExplorerCommand` so deve avancar depois desse smoke passar.
 
 ## Validacao pendente
 
-O registro loose package com `Add-AppxPackage -Register` falhou no ambiente atual por politica de sideload/developer mode desabilitada. A fatia 0027 ja gera MSIX dev assinado, mas a instalacao ainda pode exigir confiar o certificado em `LocalMachine` via PowerShell elevado. A validacao final do menu moderno depende de:
+O registro loose package com `Add-AppxPackage -Register` falhou no ambiente atual por politica de sideload/developer mode desabilitada. A fatia 0027 ja gera MSIX dev assinado, mas a instalacao ainda exige confiar o certificado em `LocalMachine\TrustedPeople` via PowerShell elevado. A validacao final do menu moderno depende de:
 
 - habilitar Developer Mode/sideload ou usar MSIX assinado com certificado confiavel;
 - registrar/instalar o pacote com package identity;

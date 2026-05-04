@@ -1,5 +1,6 @@
 param(
-  [string]$CertificatePath = ""
+  [string]$CertificatePath = "",
+  [switch]$TrustRoot
 )
 
 $ErrorActionPreference = "Stop"
@@ -36,7 +37,7 @@ function Add-CertificateToLocalMachineStore {
 }
 
 if (-not (Test-IsAdministrator)) {
-  throw "Execute este script em um PowerShell elevado. O Windows exige confianca em LocalMachine para instalar o MSIX dev assinado."
+  throw "Execute este script em um PowerShell elevado. O Windows exige confianca em LocalMachine\\TrustedPeople para instalar o MSIX dev assinado."
 }
 
 $repoRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
@@ -48,7 +49,11 @@ if (-not (Test-Path -LiteralPath $CertificatePath)) {
   throw "Certificado nao encontrado: $CertificatePath. Execute .\tools\package-msix-dev.ps1 primeiro."
 }
 
-Add-CertificateToLocalMachineStore -Path $CertificatePath -StoreName Root
 Add-CertificateToLocalMachineStore -Path $CertificatePath -StoreName TrustedPeople
 
-Write-Host "Certificado dev confiado em LocalMachine\\Root e LocalMachine\\TrustedPeople."
+if ($TrustRoot) {
+  Add-CertificateToLocalMachineStore -Path $CertificatePath -StoreName Root
+  Write-Host "Certificado dev confiado em LocalMachine\\TrustedPeople e LocalMachine\\Root."
+} else {
+  Write-Host "Certificado dev confiado em LocalMachine\\TrustedPeople."
+}

@@ -126,7 +126,8 @@ MSIX dev assinado e smoke single-instance:
 
 ```powershell
 .\tools\package-msix-dev.ps1
-.\tools\trust-msix-dev-cert-admin.ps1 # executar em PowerShell elevado se Add-AppxPackage retornar 0x800B0109
+.\tools\check-msix-dev-prereqs.ps1
+.\tools\trust-msix-dev-cert-admin.ps1 # executar em PowerShell elevado se LocalMachine\TrustedPeople estiver falso
 .\tools\install-msix-dev.ps1 -Reinstall
 .\tools\smoke-msix-single-instance.ps1
 ```
