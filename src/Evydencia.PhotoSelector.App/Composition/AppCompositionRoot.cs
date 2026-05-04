@@ -1,5 +1,6 @@
 using Evydencia.PhotoSelector.App.Display;
 using Evydencia.PhotoSelector.App.Imaging;
+using Evydencia.PhotoSelector.App.Windowing;
 using Evydencia.PhotoSelector.Infrastructure.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -11,6 +12,7 @@ public static class AppCompositionRoot
     {
         var services = new ServiceCollection();
         services.AddEvydenciaPhotoSelector();
+        services.AddSingleton<FullscreenService>();
         services.AddSingleton<WindowsDisplayContextService>();
         services.AddSingleton<ViewerImageSourceFactory>();
 

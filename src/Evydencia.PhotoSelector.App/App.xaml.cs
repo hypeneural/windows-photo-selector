@@ -20,6 +20,8 @@ public partial class App : Microsoft.UI.Xaml.Application
 
     public Task<OpenFolderFromArgumentsResult>? InitialSessionOpenTask { get; private set; }
 
+    public Window? MainWindow => _window;
+
     /// <summary>
     /// Initializes the singleton application object.
     /// </summary>

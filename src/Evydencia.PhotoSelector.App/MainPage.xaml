@@ -10,6 +10,8 @@
     <Grid Background="#0B0B0D">
         <Grid
             x:Name="ViewerHost"
+            AutomationProperties.AutomationId="ViewerHost"
+            AutomationProperties.Name="Visualizador de fotos"
             Background="#0B0B0D"
             IsTabStop="True"
             KeyDown="OnViewerKeyDown">

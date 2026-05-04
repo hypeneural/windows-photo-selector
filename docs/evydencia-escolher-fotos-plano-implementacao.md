@@ -748,7 +748,8 @@ Atualizacao de execucao:
 - Fatias 0013/0014 validaram decode JPEG dimensionado, signature probe, taxonomia inicial de erro, `FileShare.ReadWrite | FileShare.Delete`, EXIF orientation 6/8 e guard contra dupla aplicacao de orientation/dimensoes.
 - A fatia 0015 conectou o resultado de decode ao viewer WinUI (`SoftwareBitmapSource`) e passou a mostrar a primeira foto da sessao sem usar URI direto para arquivo.
 - A fatia 0016 iniciou navegacao visual por `Right`, `Left` e `Space`, mantendo cancelamento do decode anterior a cada troca.
-- A proxima prioridade e implementar fullscreen limpo inicial e, em seguida, entrar em Delete/Undo robusto.
+- A fatia 0017 implementou fullscreen limpo inicial com `AppWindow`/`FullScreenPresenter`, atalhos `F` e `Esc`, e recaptura do `DisplayContext` com estado fullscreen.
+- A proxima prioridade e entrar em Delete/Undo robusto, mantendo single-instance como bloqueio antes do menu de contexto do Explorer.
 - Se os benchmarks com JPEGs reais de estudio mostrarem que scan + ordenacao comprometem o alvo de tempo ate primeira imagem, criar uma fatia especifica para `ProgressiveOpenSessionUseCase` ou `SessionOpenHandle`, documentando a diferenca entre "primeira foto por ordem final" e "primeira previsualizacao disponivel".
 
 ### 8.4 Single-instance e reativação por pasta

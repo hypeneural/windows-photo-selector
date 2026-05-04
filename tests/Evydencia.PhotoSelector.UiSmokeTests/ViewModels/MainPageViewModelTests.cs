@@ -90,6 +90,20 @@ public sealed class MainPageViewModelTests
         Assert.IsFalse(viewModel.HasCurrentImage);
     }
 
+    [TestMethod]
+    public void SetFullscreenUpdatesFullscreenState()
+    {
+        var viewModel = new MainPageViewModel();
+
+        viewModel.SetFullscreen(isFullscreen: true);
+
+        Assert.IsTrue(viewModel.IsFullscreen);
+
+        viewModel.SetFullscreen(isFullscreen: false);
+
+        Assert.IsFalse(viewModel.IsFullscreen);
+    }
+
     private static OpenSessionResult CreateSessionResult(params string[] fileNames)
     {
         var candidates = fileNames.Select((fileName, index) => new PhotoFileCandidate(

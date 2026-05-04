@@ -15,6 +15,7 @@ public sealed class MainPageViewModel : INotifyPropertyChanged
     private bool _hasCurrentImage;
     private bool _hasSession;
     private bool _isHomeVisible = true;
+    private bool _isFullscreen;
     private bool _isImageLoading;
     private bool _isLoading;
     private bool _isViewerVisible;
@@ -109,6 +110,12 @@ public sealed class MainPageViewModel : INotifyPropertyChanged
         private set => SetProperty(ref _isHomeVisible, value);
     }
 
+    public bool IsFullscreen
+    {
+        get => _isFullscreen;
+        private set => SetProperty(ref _isFullscreen, value);
+    }
+
     public async Task<OpenFolderFromArgumentsResult?> LoadInitialSessionAsync(Task<OpenFolderFromArgumentsResult>? initialSessionOpenTask)
     {
         if (initialSessionOpenTask is null)
@@ -167,6 +174,11 @@ public sealed class MainPageViewModel : INotifyPropertyChanged
             result.CurrentPhoto,
             result.CurrentIndex,
             result.ActiveCount);
+    }
+
+    public void SetFullscreen(bool isFullscreen)
+    {
+        IsFullscreen = isFullscreen;
     }
 
     private void ApplyResult(OpenFolderFromArgumentsResult result)

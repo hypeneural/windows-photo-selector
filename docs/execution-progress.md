@@ -19,7 +19,7 @@ Ultima atualizacao: 2026-05-03
 - [x] F0-01 - ADR de stack Windows nativa criado.
 - [x] F0-02 - Validar versao .NET e Windows App SDK.
 - [x] F0-03 - Prototipar argumento `--folder`.
-- [ ] F0-04 - Prototipar fullscreen WinUI 3.
+- [x] F0-04 - Prototipar fullscreen WinUI 3.
 - [x] F0-05 - Prototipar decode JPEG dimensionado.
 - [x] F0-06 - Validar EXIF orientation.
 - [ ] F0-07 - Validar move para `_deletadas_evydencia`.
@@ -56,14 +56,15 @@ Ultima atualizacao: 2026-05-03
 - [x] F2-02 - Exibir estado da sessao aberta na UI inicial.
 - [x] F2-03 - Mostrar primeira foto no viewer.
 - [x] F2-04 - Navegacao visual por setas.
-- [ ] F2-05 - Fullscreen limpo inicial.
+- [x] F2-05 - Fullscreen limpo inicial.
 
 ## Bloqueios atuais
 
 - `ShellExtension` ainda nao tem projeto C++/WinRT. A decisao continua adiada para a fase de menu de contexto.
 - Single-instance ainda nao foi implementado; deve vir antes do menu de contexto do Explorer.
 - Conversao do resultado de decode para `ImageSource`/viewer WinUI ja existe para a primeira foto, com navegacao visual inicial por `Right`, `Left` e `Space`.
-- `WindowsDisplayContextService` captura `XamlRoot`, area util e escala de rasterizacao. Identificacao detalhada de monitor/display area fica para a fatia de fullscreen/segunda tela.
+- Fullscreen inicial ja usa `AppWindow`/`FullScreenPresenter`, `F` alterna, `Esc` sai, e o decode recaptura `DisplayContext` com estado fullscreen.
+- `WindowsDisplayContextService` captura `XamlRoot`, area util, escala de rasterizacao e estado fullscreen. Identificacao detalhada de monitor/display area fica para a fatia de segunda tela.
 
 ## Ultima validacao
 
@@ -102,6 +103,11 @@ Ultima atualizacao: 2026-05-03
 - [x] `tools/build.ps1` executado com sucesso apos 0016.
 - [x] `tools/format.ps1` executado com sucesso apos 0016.
 - [x] `tools/test.ps1` executado com sucesso apos 0016: 63 testes.
+- [x] Fatia 0017 implementou fullscreen limpo inicial com `AppWindow`/`FullScreenPresenter`.
+- [x] `tools/test.ps1 -Filter "FullyQualifiedName~UiSmoke"` executado com sucesso apos 0017: UiSmoke 5 testes.
+- [x] `tools/format.ps1` executado com sucesso apos 0017.
+- [x] `tools/build.ps1` executado com sucesso apos 0017: 0 warnings.
+- [x] `tools/test.ps1` executado com sucesso apos 0017: 64 testes.
 
 ## Ultima fatia concluida
 
@@ -121,6 +127,7 @@ Ultima atualizacao: 2026-05-03
 - 0014 - Validacao EXIF orientation 6/8 sem dupla aplicacao de rotacao/dimensoes.
 - 0015 - Primeira foto no viewer WinUI usando `ImageDecodeResult` convertido para `SoftwareBitmapSource`.
 - 0016 - Navegacao visual por setas/espaco no viewer WinUI com cancelamento de decode anterior.
+- 0017 - Fullscreen limpo inicial com `F`, `Esc` e recaptura de `DisplayContext`.
 
 ## Cobertura atual de testes
 
@@ -129,8 +136,8 @@ Ultima atualizacao: 2026-05-03
 - `Imaging.Tests`: 15 testes.
 - `Storage.Tests`: 3 testes.
 - `IntegrationTests`: 2 testes.
-- `UiSmokeTests`: 4 testes.
-- Total atual: 63 testes.
+- `UiSmokeTests`: 5 testes.
+- Total atual: 64 testes.
 
 ## Toolchain validado
 

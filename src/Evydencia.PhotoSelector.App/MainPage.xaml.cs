@@ -1,5 +1,6 @@
 using Evydencia.PhotoSelector.App.Display;
 using Evydencia.PhotoSelector.App.Imaging;
+using Evydencia.PhotoSelector.App.Windowing;
 using Evydencia.PhotoSelector.App.ViewModels;
 using Evydencia.PhotoSelector.Application.Activation;
 using Evydencia.PhotoSelector.Application.Models;
@@ -63,6 +64,25 @@ public sealed partial class MainPage : Page, IDisposable
             return;
         }
 
+        if (e.Key == VirtualKey.F)
+        {
+            e.Handled = true;
+            await ToggleFullscreenAsync(app);
+            return;
+        }
+
+        if (e.Key == VirtualKey.Escape)
+        {
+            var fullscreenService = app.Services.GetRequiredService<FullscreenService>();
+            if (fullscreenService.IsFullscreen(app.MainWindow))
+            {
+                e.Handled = true;
+                await ExitFullscreenAsync(app);
+            }
+
+            return;
+        }
+
         var previousPhotoId = ViewModel.CurrentPhoto?.Id;
         var navigationResult = e.Key switch
         {
@@ -104,6 +124,39 @@ public sealed partial class MainPage : Page, IDisposable
         await LoadCurrentPhotoAsync(app);
     }
 
+    private async Task ToggleFullscreenAsync(App app)
+    {
+        var window = app.MainWindow;
+        if (window is null)
+        {
+            return;
+        }
+
+        var fullscreenService = app.Services.GetRequiredService<FullscreenService>();
+        var isFullscreen = fullscreenService.ToggleFullscreen(window);
+        await ApplyFullscreenStateAsync(app, isFullscreen);
+    }
+
+    private async Task ExitFullscreenAsync(App app)
+    {
+        var window = app.MainWindow;
+        if (window is null)
+        {
+            return;
+        }
+
+        app.Services.GetRequiredService<FullscreenService>().ExitFullscreen(window);
+        await ApplyFullscreenStateAsync(app, isFullscreen: false);
+    }
+
+    private async Task ApplyFullscreenStateAsync(App app, bool isFullscreen)
+    {
+        ViewModel.SetFullscreen(isFullscreen);
+        SyncVisualState();
+        ViewerHost.Focus(FocusState.Programmatic);
+        await LoadCurrentPhotoAsync(app);
+    }
+
     private async Task LoadCurrentPhotoAsync(App app)
     {
         if (ViewModel.CurrentPhoto is null)
@@ -126,7 +179,7 @@ public sealed partial class MainPage : Page, IDisposable
 
             var displayContext = app.Services
                 .GetRequiredService<WindowsDisplayContextService>()
-                .Capture(ViewerHost, isFullscreen: false);
+                .Capture(ViewerHost, ViewModel.IsFullscreen);
             var decodeResult = await app.Services
                 .GetRequiredService<JpegDecodeService>()
                 .DecodeForDisplayAsync(ViewModel.CurrentPhoto.FullPath, displayContext, cancellationToken);
