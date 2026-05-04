@@ -133,10 +133,10 @@ Estado ja validado:
 - fullscreen limpo inicial com `F` e `Esc`.
 - move/restore local para `_deletadas_evydencia` com colisao segura.
 - delete sem UI com `PendingDelete`, `Deleted`, `DeleteFailed`, contadores e navegacao validados.
+- undo sem UI com `PendingRestore`, `Restored`, pilha por sessao, contadores e restore real validados.
 
 Proximas fatias planejadas:
 
-- `UndoManager` e `UndoLastDeleteUseCase`;
 - journal JSONL para delete/restore;
 - single-instance antes do menu de contexto do Explorer;
 - atalhos `Delete` e `Ctrl+Z` no viewer.

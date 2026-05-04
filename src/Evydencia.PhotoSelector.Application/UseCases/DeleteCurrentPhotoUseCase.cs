@@ -3,6 +3,7 @@ using Evydencia.PhotoSelector.Application.Models;
 using Evydencia.PhotoSelector.Core.Deletion;
 using Evydencia.PhotoSelector.Core.Photos;
 using Evydencia.PhotoSelector.Core.Sessions;
+using Evydencia.PhotoSelector.Core.Undo;
 
 namespace Evydencia.PhotoSelector.Application.UseCases;
 
@@ -10,13 +11,16 @@ public sealed class DeleteCurrentPhotoUseCase
 {
     private readonly DeleteManager _deleteManager;
     private readonly IFileMoveService _fileMoveService;
+    private readonly UndoManager _undoManager;
 
     public DeleteCurrentPhotoUseCase(
         DeleteManager deleteManager,
-        IFileMoveService fileMoveService)
+        IFileMoveService fileMoveService,
+        UndoManager undoManager)
     {
         _deleteManager = deleteManager;
         _fileMoveService = fileMoveService;
+        _undoManager = undoManager;
     }
 
     public async Task<DeleteCurrentPhotoResult> ExecuteAsync(
@@ -56,6 +60,10 @@ public sealed class DeleteCurrentPhotoUseCase
         FileMoveResult moveResult)
     {
         var completion = _deleteManager.CompleteDelete(session, deletedPhoto);
+        _undoManager.RegisterDeletedPhoto(
+            session,
+            completion.DeletedPhoto,
+            moveResult.ActualDestinationPath!);
         return DeleteCurrentPhotoResult.Deleted(
             session,
             completion.DeletedPhoto,

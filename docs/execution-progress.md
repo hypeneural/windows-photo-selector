@@ -1,6 +1,6 @@
 # Progresso de execucao
 
-Ultima atualizacao: 2026-05-03
+Ultima atualizacao: 2026-05-04
 
 ## Estado geral
 
@@ -64,8 +64,8 @@ Ultima atualizacao: 2026-05-03
 - [x] F3-02 - Implementar `FileMoveService` para move/restore local seguro.
 - [x] F3-03 - Implementar `DeleteManager` de dominio com `PendingDelete`, `Deleted` e `DeleteFailed`.
 - [x] F3-04 - Implementar `DeleteCurrentPhotoUseCase`.
-- [ ] F3-05 - Implementar `UndoManager` de dominio.
-- [ ] F3-06 - Implementar `UndoLastDeleteUseCase`.
+- [x] F3-05 - Implementar `UndoManager` de dominio.
+- [x] F3-06 - Implementar `UndoLastDeleteUseCase`.
 - [ ] F3-07 - Implementar `JsonlSessionJournalStore`.
 - [ ] F3-08 - Implementar replay basico de journal.
 - [ ] F3-09 - Tratar arquivo bloqueado no fluxo de delete.
@@ -79,7 +79,7 @@ Ultima atualizacao: 2026-05-03
 - Conversao do resultado de decode para `ImageSource`/viewer WinUI ja existe para a primeira foto, com navegacao visual inicial por `Right`, `Left` e `Space`.
 - Fullscreen inicial ja usa `AppWindow`/`FullScreenPresenter`, `F` alterna, `Esc` sai, e o decode recaptura `DisplayContext` com estado fullscreen.
 - `FileMoveService` ja move para `_deletadas_evydencia`, restaura, resolve colisao e preserva `LastWriteTimeUtc`; ja esta ligado ao `DeleteCurrentPhotoUseCase`.
-- `DeleteManager` e `DeleteCurrentPhotoUseCase` ja validam `PendingDelete`, `Deleted`, `DeleteFailed`, contadores e navegacao sem UI; ainda falta journal, undo e atalhos.
+- `DeleteManager`, `DeleteCurrentPhotoUseCase`, `UndoManager` e `UndoLastDeleteUseCase` ja validam `PendingDelete`, `Deleted`, `PendingRestore`, `Restored`, `DeleteFailed`, contadores e navegacao sem UI; ainda falta journal e atalhos.
 - `WindowsDisplayContextService` captura `XamlRoot`, area util, escala de rasterizacao e estado fullscreen. Identificacao detalhada de monitor/display area fica para a fatia de segunda tela.
 
 ## Ultima validacao
@@ -134,6 +134,11 @@ Ultima atualizacao: 2026-05-03
 - [x] `tools/format.ps1` executado com sucesso apos 0019.
 - [x] `tools/build.ps1` executado com sucesso apos 0019: 0 warnings.
 - [x] `tools/test.ps1` executado com sucesso apos 0019: 82 testes.
+- [x] Fatia 0020 implementou `UndoManager` e `UndoLastDeleteUseCase`.
+- [x] `tools/test.ps1 -Filter "FullyQualifiedName~Core|FullyQualifiedName~Application|FullyQualifiedName~Integration"` executado com sucesso apos 0020: Core 32 testes, Application 27 testes, Integration 4 testes.
+- [x] `tools/format.ps1` executado com sucesso apos 0020.
+- [x] `tools/build.ps1` executado com sucesso apos 0020: 0 warnings.
+- [x] `tools/test.ps1` executado com sucesso apos 0020: 93 testes.
 
 ## Ultima fatia concluida
 
@@ -156,16 +161,17 @@ Ultima atualizacao: 2026-05-03
 - 0017 - Fullscreen limpo inicial com `F`, `Esc` e recaptura de `DisplayContext`.
 - 0018 - Fundacao de move/restore para `_deletadas_evydencia` com colisao, timestamp e read-only.
 - 0019 - `DeleteManager` e `DeleteCurrentPhotoUseCase` sem UI, com status, contadores, navegacao e move real em teste de integracao.
+- 0020 - `UndoManager` e `UndoLastDeleteUseCase` sem UI, com pilha LIFO por sessao, restore real em teste de integracao e retry seguro em falha.
 
 ## Cobertura atual de testes
 
-- `Core.Tests`: 27 testes.
-- `Application.Tests`: 22 testes.
+- `Core.Tests`: 32 testes.
+- `Application.Tests`: 27 testes.
 - `Imaging.Tests`: 15 testes.
 - `Storage.Tests`: 10 testes.
-- `IntegrationTests`: 3 testes.
+- `IntegrationTests`: 4 testes.
 - `UiSmokeTests`: 5 testes.
-- Total atual: 82 testes.
+- Total atual: 93 testes.
 
 ## Toolchain validado
 

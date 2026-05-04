@@ -4,6 +4,7 @@ using Evydencia.PhotoSelector.Application.UseCases;
 using Evydencia.PhotoSelector.Core.Deletion;
 using Evydencia.PhotoSelector.Core.Photos;
 using Evydencia.PhotoSelector.Core.Sessions;
+using Evydencia.PhotoSelector.Core.Undo;
 
 namespace Evydencia.PhotoSelector.Application.Tests.UseCases;
 
@@ -15,7 +16,8 @@ public sealed class DeleteCurrentPhotoUseCaseTests
     {
         var session = SessionFactory.Create("IMG_0001.jpg", "IMG_0002.jpg", "IMG_0003.jpg");
         var fileMoveService = new FakeFileMoveService(SuccessMoveResult(session.Photos[0]));
-        var useCase = new DeleteCurrentPhotoUseCase(new DeleteManager(), fileMoveService);
+        var undoManager = new UndoManager();
+        var useCase = new DeleteCurrentPhotoUseCase(new DeleteManager(), fileMoveService, undoManager);
 
         var result = await useCase.ExecuteAsync(session);
 
@@ -27,6 +29,7 @@ public sealed class DeleteCurrentPhotoUseCaseTests
         Assert.AreEqual(1, result.DeletedCount);
         Assert.AreEqual(session.Photos[0].FullPath, fileMoveService.LastSourcePath);
         Assert.AreEqual(session.FolderPath, fileMoveService.LastSessionFolderPath);
+        Assert.IsTrue(undoManager.CanUndo(session));
     }
 
     [TestMethod]
@@ -36,7 +39,7 @@ public sealed class DeleteCurrentPhotoUseCaseTests
         new NavigateNextPhotoUseCase().Execute(session);
         new NavigateNextPhotoUseCase().Execute(session);
         var fileMoveService = new FakeFileMoveService(SuccessMoveResult(session.Photos[2]));
-        var useCase = new DeleteCurrentPhotoUseCase(new DeleteManager(), fileMoveService);
+        var useCase = new DeleteCurrentPhotoUseCase(new DeleteManager(), fileMoveService, new UndoManager());
 
         var result = await useCase.ExecuteAsync(session);
 
@@ -51,7 +54,8 @@ public sealed class DeleteCurrentPhotoUseCaseTests
     {
         var session = SessionFactory.Create("IMG_0001.jpg", "IMG_0002.jpg", "IMG_0003.jpg");
         var fileMoveService = new FakeFileMoveService(FailedMoveResult(session.Photos[0]));
-        var useCase = new DeleteCurrentPhotoUseCase(new DeleteManager(), fileMoveService);
+        var undoManager = new UndoManager();
+        var useCase = new DeleteCurrentPhotoUseCase(new DeleteManager(), fileMoveService, undoManager);
 
         var result = await useCase.ExecuteAsync(session);
 
@@ -62,6 +66,7 @@ public sealed class DeleteCurrentPhotoUseCaseTests
         Assert.AreEqual(0, result.DeletedCount);
         Assert.AreEqual(1, result.CurrentIndex);
         Assert.AreEqual(FileMoveErrorCode.IoFailure, result.FileMoveResult?.ErrorCode);
+        Assert.IsFalse(undoManager.CanUndo(session));
     }
 
     [TestMethod]
@@ -85,7 +90,7 @@ public sealed class DeleteCurrentPhotoUseCaseTests
                     PhotoStatus.Deleted)
             ]);
         var fileMoveService = new FakeFileMoveService(FailedMoveResult(session.Photos[0]));
-        var useCase = new DeleteCurrentPhotoUseCase(new DeleteManager(), fileMoveService);
+        var useCase = new DeleteCurrentPhotoUseCase(new DeleteManager(), fileMoveService, new UndoManager());
 
         var result = await useCase.ExecuteAsync(session);
 
@@ -99,7 +104,8 @@ public sealed class DeleteCurrentPhotoUseCaseTests
     {
         var session = SessionFactory.Create("IMG_0001.jpg", "IMG_0002.jpg");
         var fileMoveService = new FakeFileMoveService(SuccessMoveResult(session.Photos[0]), cancelMove: true);
-        var useCase = new DeleteCurrentPhotoUseCase(new DeleteManager(), fileMoveService);
+        var undoManager = new UndoManager();
+        var useCase = new DeleteCurrentPhotoUseCase(new DeleteManager(), fileMoveService, undoManager);
 
         await Assert.ThrowsExactlyAsync<OperationCanceledException>(() => useCase.ExecuteAsync(session));
 
@@ -107,6 +113,7 @@ public sealed class DeleteCurrentPhotoUseCaseTests
         Assert.AreEqual(2, session.ActiveCount);
         Assert.AreEqual(0, session.DeletedCount);
         Assert.AreEqual(1, session.CurrentIndex);
+        Assert.IsFalse(undoManager.CanUndo(session));
     }
 
     private static FileMoveResult SuccessMoveResult(PhotoItem photo)

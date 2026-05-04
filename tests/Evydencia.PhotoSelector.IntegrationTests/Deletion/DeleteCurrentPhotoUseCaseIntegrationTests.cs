@@ -4,6 +4,7 @@ using Evydencia.PhotoSelector.Core.Deletion;
 using Evydencia.PhotoSelector.Core.Photos;
 using Evydencia.PhotoSelector.Core.Scanning;
 using Evydencia.PhotoSelector.Core.Sessions;
+using Evydencia.PhotoSelector.Core.Undo;
 using Evydencia.PhotoSelector.Storage.Filesystem;
 
 namespace Evydencia.PhotoSelector.IntegrationTests.Deletion;
@@ -20,7 +21,7 @@ public sealed class DeleteCurrentPhotoUseCaseIntegrationTests
             var firstPath = WriteFile(folderPath, "IMG_0001.jpg");
             WriteFile(folderPath, "IMG_0002.jpg");
             var session = CreateSession(folderPath, "IMG_0001.jpg", "IMG_0002.jpg");
-            var useCase = new DeleteCurrentPhotoUseCase(new DeleteManager(), new FileMoveService());
+            var useCase = new DeleteCurrentPhotoUseCase(new DeleteManager(), new FileMoveService(), new UndoManager());
 
             var result = await useCase.ExecuteAsync(session);
 
@@ -35,6 +36,39 @@ public sealed class DeleteCurrentPhotoUseCaseIntegrationTests
             Assert.AreEqual(
                 Path.Combine(folderPath, FolderScanPolicy.DeletedFolderName, "IMG_0001.jpg"),
                 result.FileMoveResult.ActualDestinationPath);
+        }
+        finally
+        {
+            DeleteTemporaryFolder(folderPath);
+        }
+    }
+
+    [TestMethod]
+    public async Task DeleteThenUndoWithFileMoveServiceRestoresFileAndMarksRestored()
+    {
+        var folderPath = CreateTemporaryFolder();
+        try
+        {
+            var firstPath = WriteFile(folderPath, "IMG_0001.jpg");
+            WriteFile(folderPath, "IMG_0002.jpg");
+            var session = CreateSession(folderPath, "IMG_0001.jpg", "IMG_0002.jpg");
+            var undoManager = new UndoManager();
+            var fileMoveService = new FileMoveService();
+            var deleteUseCase = new DeleteCurrentPhotoUseCase(new DeleteManager(), fileMoveService, undoManager);
+            var undoUseCase = new UndoLastDeleteUseCase(undoManager, fileMoveService);
+
+            var deleteResult = await deleteUseCase.ExecuteAsync(session);
+            var undoResult = await undoUseCase.ExecuteAsync(session);
+
+            Assert.AreEqual(DeleteCurrentPhotoStatus.Deleted, deleteResult.Status);
+            Assert.AreEqual(UndoLastDeleteStatus.Restored, undoResult.Status);
+            Assert.AreEqual(PhotoStatus.Restored, undoResult.RestoredPhoto?.Status);
+            Assert.AreEqual("IMG_0001.jpg", undoResult.CurrentPhoto?.FileName);
+            Assert.AreEqual(2, undoResult.ActiveCount);
+            Assert.AreEqual(0, undoResult.DeletedCount);
+            Assert.IsTrue(File.Exists(firstPath));
+            Assert.IsFalse(File.Exists(deleteResult.FileMoveResult?.ActualDestinationPath));
+            Assert.AreEqual(firstPath, undoResult.FileMoveResult?.ActualDestinationPath);
         }
         finally
         {

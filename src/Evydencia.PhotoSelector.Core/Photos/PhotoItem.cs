@@ -31,13 +31,13 @@ public sealed class PhotoItem
 
     public Guid Id { get; }
 
-    public string FileName { get; }
+    public string FileName { get; private set; }
 
-    public string FullPath { get; }
+    public string FullPath { get; private set; }
 
-    public string OriginalDirectory { get; }
+    public string OriginalDirectory { get; private set; }
 
-    public string Extension { get; }
+    public string Extension { get; private set; }
 
     public long SizeBytes { get; }
 
@@ -66,6 +66,18 @@ public sealed class PhotoItem
     public void SetStatus(PhotoStatus status)
     {
         Status = status;
+    }
+
+    public void SetFileLocation(
+        string fileName,
+        string fullPath,
+        string originalDirectory,
+        string extension)
+    {
+        FileName = Required(fileName, nameof(fileName));
+        FullPath = Required(fullPath, nameof(fullPath));
+        OriginalDirectory = Required(originalDirectory, nameof(originalDirectory));
+        Extension = Required(extension, nameof(extension));
     }
 
     public void SetImageMetadata(int width, int height, int? exifOrientation, DateTimeOffset? captureDate)
