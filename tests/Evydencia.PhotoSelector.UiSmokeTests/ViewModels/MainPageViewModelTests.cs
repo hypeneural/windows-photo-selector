@@ -2,6 +2,8 @@ using Evydencia.PhotoSelector.App.ViewModels;
 using Evydencia.PhotoSelector.Application.Activation;
 using Evydencia.PhotoSelector.Application.Models;
 using Evydencia.PhotoSelector.Application.UseCases;
+using Evydencia.PhotoSelector.Core.Deletion;
+using Evydencia.PhotoSelector.Core.Photos;
 using Evydencia.PhotoSelector.Core.Scanning;
 using Evydencia.PhotoSelector.Core.Sessions;
 
@@ -104,6 +106,113 @@ public sealed class MainPageViewModelTests
         Assert.IsFalse(viewModel.IsFullscreen);
     }
 
+    [TestMethod]
+    public async Task ApplyDeletePendingUpdatesCurrentPhotoAndCounter()
+    {
+        var viewModel = new MainPageViewModel();
+        var sessionResult = CreateSessionResult("IMG_0001.jpg", "IMG_0002.jpg", "IMG_0003.jpg");
+        await LoadOpenedSessionAsync(viewModel, sessionResult);
+        var request = new DeleteManager().RequestDeleteCurrent(sessionResult.Session);
+
+        viewModel.ApplyDeletePending(
+            request.CurrentPhoto,
+            sessionResult.Session.CurrentIndex,
+            sessionResult.Session.ActiveCount);
+
+        Assert.AreEqual("IMG_0002.jpg", viewModel.CurrentPhoto?.FileName);
+        Assert.AreEqual("1 / 2", viewModel.ViewerCounterText);
+        Assert.AreEqual("Excluindo foto", viewModel.ViewerStatusText);
+        Assert.IsFalse(viewModel.HasCurrentImage);
+    }
+
+    [TestMethod]
+    public async Task ApplyDeleteResultPreservesLoadedCurrentImageWhenCurrentPhotoDidNotChange()
+    {
+        var viewModel = new MainPageViewModel();
+        var sessionResult = CreateSessionResult("IMG_0001.jpg", "IMG_0002.jpg", "IMG_0003.jpg");
+        await LoadOpenedSessionAsync(viewModel, sessionResult);
+        var deleteManager = new DeleteManager();
+        var request = deleteManager.RequestDeleteCurrent(sessionResult.Session);
+        viewModel.ApplyDeletePending(
+            request.CurrentPhoto,
+            sessionResult.Session.CurrentIndex,
+            sessionResult.Session.ActiveCount);
+        viewModel.CompleteImageLoad();
+        var completion = deleteManager.CompleteDelete(sessionResult.Session, request.DeletedPhoto!);
+        var result = DeleteCurrentPhotoResult.Deleted(
+            sessionResult.Session,
+            completion.DeletedPhoto,
+            completion.CurrentPhoto,
+            SuccessMoveResult(completion.DeletedPhoto));
+
+        viewModel.ApplyDeleteResult(result);
+
+        Assert.AreEqual("IMG_0002.jpg", viewModel.CurrentPhoto?.FileName);
+        Assert.AreEqual("1 / 2", viewModel.ViewerCounterText);
+        Assert.AreEqual("Foto removida", viewModel.ViewerStatusText);
+        Assert.IsTrue(viewModel.HasCurrentImage);
+    }
+
+    [TestMethod]
+    public async Task ApplyDeleteResultWhenMissingShowsMissingStatus()
+    {
+        var viewModel = new MainPageViewModel();
+        var sessionResult = CreateSessionResult("IMG_0001.jpg", "IMG_0002.jpg", "IMG_0003.jpg");
+        await LoadOpenedSessionAsync(viewModel, sessionResult);
+        var deleteManager = new DeleteManager();
+        var request = deleteManager.RequestDeleteCurrent(sessionResult.Session);
+        var completion = deleteManager.MarkMissing(sessionResult.Session, request.DeletedPhoto!, request.CurrentPhoto?.Id);
+        var result = DeleteCurrentPhotoResult.Missing(
+            sessionResult.Session,
+            completion.DeletedPhoto,
+            completion.CurrentPhoto,
+            FailedMoveResult(completion.DeletedPhoto, FileMoveErrorCode.SourceMissing));
+
+        viewModel.ApplyDeleteResult(result);
+
+        Assert.AreEqual("IMG_0002.jpg", viewModel.CurrentPhoto?.FileName);
+        Assert.AreEqual("1 / 2", viewModel.ViewerCounterText);
+        Assert.AreEqual("Arquivo ausente", viewModel.ViewerStatusText);
+        Assert.IsFalse(viewModel.HasCurrentImage);
+    }
+
+    [TestMethod]
+    public async Task ApplyUndoResultWhenRestoredShowsRestoredPhoto()
+    {
+        var viewModel = new MainPageViewModel();
+        var sessionResult = CreateSessionResult("IMG_0001.jpg", "IMG_0002.jpg");
+        await LoadOpenedSessionAsync(viewModel, sessionResult);
+        sessionResult.Session.Photos[0].SetStatus(PhotoStatus.Restored);
+        var result = UndoLastDeleteResult.Restored(
+            sessionResult.Session,
+            sessionResult.Session.Photos[0],
+            sessionResult.Session.Photos[0],
+            SuccessRestoreResult(sessionResult.Session.Photos[0]));
+
+        viewModel.ApplyUndoResult(result);
+
+        Assert.AreEqual("IMG_0001.jpg", viewModel.CurrentPhoto?.FileName);
+        Assert.AreEqual("1 / 2", viewModel.ViewerCounterText);
+        Assert.AreEqual("Foto restaurada", viewModel.ViewerStatusText);
+        Assert.IsFalse(viewModel.HasCurrentImage);
+    }
+
+    [TestMethod]
+    public async Task ApplyUndoResultWhenNoUndoAvailablePreservesCurrentPhoto()
+    {
+        var viewModel = new MainPageViewModel();
+        var sessionResult = CreateSessionResult("IMG_0001.jpg", "IMG_0002.jpg");
+        await LoadOpenedSessionAsync(viewModel, sessionResult);
+        viewModel.CompleteImageLoad();
+
+        viewModel.ApplyUndoResult(UndoLastDeleteResult.NoUndoAvailable(sessionResult.Session));
+
+        Assert.AreEqual("IMG_0001.jpg", viewModel.CurrentPhoto?.FileName);
+        Assert.AreEqual("1 / 2", viewModel.ViewerCounterText);
+        Assert.AreEqual("Nada para desfazer", viewModel.ViewerStatusText);
+        Assert.IsTrue(viewModel.HasCurrentImage);
+    }
+
     private static OpenSessionResult CreateSessionResult(params string[] fileNames)
     {
         var candidates = fileNames.Select((fileName, index) => new PhotoFileCandidate(
@@ -116,5 +225,47 @@ public sealed class MainPageViewModelTests
             index));
         var session = new PhotoSessionFactory().Create("C:\\Sessao Cliente", candidates);
         return new OpenSessionResult(session, session.Photos[0]);
+    }
+
+    private static Task<OpenFolderFromArgumentsResult?> LoadOpenedSessionAsync(
+        MainPageViewModel viewModel,
+        OpenSessionResult sessionResult)
+    {
+        var result = OpenFolderFromArgumentsResult.Opened(
+            new FolderLaunchArguments("C:\\Sessao Cliente", "launcher"),
+            sessionResult);
+        return viewModel.LoadInitialSessionAsync(Task.FromResult(result));
+    }
+
+    private static FileMoveResult SuccessMoveResult(PhotoItem photo)
+    {
+        var deletedPath = $"C:\\Sessao Cliente\\_deletadas_evydencia\\{photo.FileName}";
+        return FileMoveResult.Success(
+            photo.FullPath,
+            deletedPath,
+            deletedPath,
+            collisionResolved: false,
+            DateTimeOffset.UtcNow);
+    }
+
+    private static FileMoveResult SuccessRestoreResult(PhotoItem photo)
+    {
+        var deletedPath = $"C:\\Sessao Cliente\\_deletadas_evydencia\\{photo.FileName}";
+        return FileMoveResult.Success(
+            deletedPath,
+            photo.FullPath,
+            photo.FullPath,
+            collisionResolved: false,
+            DateTimeOffset.UtcNow);
+    }
+
+    private static FileMoveResult FailedMoveResult(PhotoItem photo, FileMoveErrorCode errorCode)
+    {
+        var deletedPath = $"C:\\Sessao Cliente\\_deletadas_evydencia\\{photo.FileName}";
+        return FileMoveResult.Failure(
+            photo.FullPath,
+            deletedPath,
+            errorCode,
+            "move failed");
     }
 }

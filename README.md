@@ -137,10 +137,11 @@ Estado ja validado:
 - journal JSONL append-only para delete/restore.
 - replay basico de journal e reconciliacao inicial com filesystem como fonte da verdade.
 - delete de arquivo bloqueado/ausente tratado sem corromper contadores: `FileLocked`/`DeleteFailed` e `Missing`.
+- `Delete` e `Ctrl+Z` ligados ao viewer WinUI, chamando os use cases reais e atualizando foto/contadores.
 
 Proximas fatias planejadas:
 
-- ligar `Delete` e `Ctrl+Z` no viewer;
+- overlay temporizado, retry visual e polimento do fluxo de erro no viewer;
 - single-instance antes do menu de contexto do Explorer;
 
 ## Documentacao principal

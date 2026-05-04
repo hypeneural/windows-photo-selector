@@ -5,13 +5,16 @@ using Evydencia.PhotoSelector.App.ViewModels;
 using Evydencia.PhotoSelector.Application.Activation;
 using Evydencia.PhotoSelector.Application.Models;
 using Evydencia.PhotoSelector.Application.UseCases;
+using Evydencia.PhotoSelector.Core.Photos;
 using Evydencia.PhotoSelector.Core.Sessions;
 using Evydencia.PhotoSelector.Imaging.Decode;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Windows.System;
+using Windows.UI.Core;
 
 namespace Evydencia.PhotoSelector.App;
 
@@ -21,6 +24,7 @@ namespace Evydencia.PhotoSelector.App;
 public sealed partial class MainPage : Page, IDisposable
 {
     private PhotoSession? _currentSession;
+    private bool _fileCommandInProgress;
     private CancellationTokenSource? _imageLoadCancellation;
 
     public MainPage()
@@ -61,6 +65,20 @@ public sealed partial class MainPage : Page, IDisposable
     {
         if (Microsoft.UI.Xaml.Application.Current is not App app || _currentSession is null)
         {
+            return;
+        }
+
+        if (e.Key == VirtualKey.Z && IsControlKeyDown())
+        {
+            e.Handled = true;
+            await UndoLastDeleteAsync(app);
+            return;
+        }
+
+        if (e.Key == VirtualKey.Delete)
+        {
+            e.Handled = true;
+            await DeleteCurrentPhotoAsync(app);
             return;
         }
 
@@ -115,6 +133,131 @@ public sealed partial class MainPage : Page, IDisposable
         await NavigateToAsync(app, navigationResult);
     }
 
+    private async Task DeleteCurrentPhotoAsync(App app)
+    {
+        if (_currentSession is null)
+        {
+            return;
+        }
+
+        if (_fileCommandInProgress)
+        {
+            ViewModel.SetViewerStatus("Operacao em andamento");
+            return;
+        }
+
+        _fileCommandInProgress = true;
+        try
+        {
+            var deleteTask = app.Services
+                .GetRequiredService<DeleteCurrentPhotoUseCase>()
+                .ExecuteAsync(_currentSession);
+
+            ApplyOptimisticFileCommandState("Excluindo foto");
+            await LoadCurrentPhotoAsync(app);
+
+            var result = await deleteTask;
+            ViewModel.ApplyDeleteResult(result);
+            SyncVisualState();
+            ViewerHost.Focus(FocusState.Programmatic);
+
+            if (result.CurrentPhoto is not null && !ViewModel.HasCurrentImage)
+            {
+                await LoadCurrentPhotoAsync(app);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            ViewModel.SetViewerStatus("Exclusao cancelada");
+            SyncVisualState();
+        }
+        catch (Exception exception)
+        {
+            ViewModel.SetViewerStatus($"Falha ao excluir: {exception.Message}");
+            SyncVisualState();
+        }
+        finally
+        {
+            _fileCommandInProgress = false;
+            ViewerHost.Focus(FocusState.Programmatic);
+        }
+    }
+
+    private async Task UndoLastDeleteAsync(App app)
+    {
+        if (_currentSession is null)
+        {
+            return;
+        }
+
+        if (_fileCommandInProgress)
+        {
+            ViewModel.SetViewerStatus("Operacao em andamento");
+            return;
+        }
+
+        _fileCommandInProgress = true;
+        try
+        {
+            ViewModel.SetViewerStatus("Restaurando foto");
+            SyncVisualState();
+            var result = await app.Services
+                .GetRequiredService<UndoLastDeleteUseCase>()
+                .ExecuteAsync(_currentSession);
+
+            ViewModel.ApplyUndoResult(result);
+
+            if (result.Status == UndoLastDeleteStatus.NoUndoAvailable)
+            {
+                SyncVisualState();
+                ViewerHost.Focus(FocusState.Programmatic);
+                return;
+            }
+
+            CurrentPhotoImage.Source = null;
+            SyncVisualState();
+            ViewerHost.Focus(FocusState.Programmatic);
+
+            if (result.CurrentPhoto is not null)
+            {
+                await LoadCurrentPhotoAsync(app);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            ViewModel.SetViewerStatus("Restauracao cancelada");
+            SyncVisualState();
+        }
+        catch (Exception exception)
+        {
+            ViewModel.SetViewerStatus($"Falha ao restaurar: {exception.Message}");
+            SyncVisualState();
+        }
+        finally
+        {
+            _fileCommandInProgress = false;
+            ViewerHost.Focus(FocusState.Programmatic);
+        }
+    }
+
+    private void ApplyOptimisticFileCommandState(string statusText)
+    {
+        if (_currentSession is null)
+        {
+            return;
+        }
+
+        var currentPhoto = ResolveCurrentActivePhoto(_currentSession);
+        ViewModel.ApplyDeletePending(
+            currentPhoto,
+            _currentSession.CurrentIndex,
+            _currentSession.ActiveCount);
+        ViewModel.SetViewerStatus(statusText);
+        CurrentPhotoImage.Source = null;
+        SyncVisualState();
+        ViewerHost.Focus(FocusState.Programmatic);
+    }
+
     private async Task NavigateToAsync(App app, NavigationResult navigationResult)
     {
         ViewModel.ApplyNavigation(navigationResult);
@@ -155,6 +298,23 @@ public sealed partial class MainPage : Page, IDisposable
         SyncVisualState();
         ViewerHost.Focus(FocusState.Programmatic);
         await LoadCurrentPhotoAsync(app);
+    }
+
+    private static PhotoItem? ResolveCurrentActivePhoto(PhotoSession session)
+    {
+        var active = session.ActivePhotos();
+        if (active.Count == 0)
+        {
+            return null;
+        }
+
+        return active[Math.Min(session.CurrentIndex, active.Count - 1)];
+    }
+
+    private static bool IsControlKeyDown()
+    {
+        var state = InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Control);
+        return (state & CoreVirtualKeyStates.Down) == CoreVirtualKeyStates.Down;
     }
 
     private async Task LoadCurrentPhotoAsync(App app)

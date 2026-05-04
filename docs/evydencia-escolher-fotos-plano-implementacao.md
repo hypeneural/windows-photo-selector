@@ -755,7 +755,8 @@ Atualizacao de execucao:
 - A fatia 0021 implementou `JsonlSessionJournalStore` e eventos JSONL append-only para `DeleteRequested`, `Deleted`, `DeleteFailed`, `UndoRequested`, `Restored` e `RestoreFailed`, gravados em `_deletadas_evydencia`.
 - A fatia 0022 implementou replay basico de journal/reconciliacao inicial com `ReplaySessionJournalUseCase`, leitura JSONL por `ReadEventsAsync`, filesystem vencendo divergencia e recuperacao de foto deletada nao escaneada na pasta original.
 - A fatia 0023 fechou F3-09/F3-10 com `FileLocked` para arquivo bloqueado, `Missing` para origem ausente, contadores consistentes e eventos `DeleteFailed` no journal.
-- A proxima prioridade e ligar `Delete` e `Ctrl+Z` no viewer, mantendo single-instance como bloqueio antes do menu de contexto do Explorer.
+- A fatia 0024 ligou `Delete` e `Ctrl+Z` no viewer WinUI, chamando os use cases reais, atualizando foto/contadores e evitando comando de arquivo concorrente nesta primeira ligacao.
+- A proxima prioridade e polir overlay/retry visual ou implementar single-instance, mantendo single-instance como bloqueio antes do menu de contexto do Explorer.
 - Se os benchmarks com JPEGs reais de estudio mostrarem que scan + ordenacao comprometem o alvo de tempo ate primeira imagem, criar uma fatia especifica para `ProgressiveOpenSessionUseCase` ou `SessionOpenHandle`, documentando a diferenca entre "primeira foto por ordem final" e "primeira previsualizacao disponivel".
 
 ### 8.4 Single-instance e reativação por pasta
@@ -2013,10 +2014,11 @@ Critério de saída:
 | F3-08 | Implementar replay básico de journal | Estado pode ser reconstruído em teste; feito na fatia 0022 |
 | F3-09 | Tratar arquivo bloqueado | Erro visível e estado consistente; feito na fatia 0023 |
 | F3-10 | Tratar arquivo ausente | Foto vira `Missing` e app continua; feito na fatia 0023 |
-| F3-11 | Atualizar contadores em todas as transições | Testes cobrem delete/undo/fim da lista |
+| F3-11 | Atualizar contadores em todas as transições | Testes cobrem delete/undo/fim da lista; feito ate a fatia 0024 |
 | F3-12 | Implementar resultado rico de `FileMoveService` | Erros distinguem origem ausente, destino ocupado, permissão, lock e falha desconhecida |
 | F3-13 | Preservar timestamps e destino real no journal | Undo usa `DeletedToPath` real e mantém `LastWriteTimeUtc` quando possível |
 | F3-14 | Planejar rollback cross-volume futuro | Copy+verify+delete fica documentado e testável antes de suportar volumes diferentes |
+| F3-15 | Ligar `Delete` e `Ctrl+Z` no viewer | Atalhos chamam `DeleteCurrentPhotoUseCase`/`UndoLastDeleteUseCase`, atualizam foto e contadores; feito na fatia 0024 |
 
 ### Fase 4
 

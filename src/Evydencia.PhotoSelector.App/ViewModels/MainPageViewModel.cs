@@ -166,6 +166,13 @@ public sealed class MainPageViewModel : INotifyPropertyChanged
             : message;
     }
 
+    public void SetViewerStatus(string message)
+    {
+        ViewerStatusText = string.IsNullOrWhiteSpace(message)
+            ? string.Empty
+            : message;
+    }
+
     public void ApplyNavigation(NavigationResult result)
     {
         ArgumentNullException.ThrowIfNull(result);
@@ -174,6 +181,63 @@ public sealed class MainPageViewModel : INotifyPropertyChanged
             result.CurrentPhoto,
             result.CurrentIndex,
             result.ActiveCount);
+    }
+
+    public void ApplyDeletePending(PhotoItem? currentPhoto, int currentIndex, int activeCount)
+    {
+        ApplyCurrentPhoto(
+            currentPhoto,
+            currentIndex,
+            activeCount);
+        ViewerStatusText = currentPhoto is null
+            ? "Nenhuma foto restante"
+            : "Excluindo foto";
+    }
+
+    public void ApplyDeleteResult(DeleteCurrentPhotoResult result)
+    {
+        ArgumentNullException.ThrowIfNull(result);
+
+        var preserveImage = HasCurrentImage && CurrentPhoto?.Id == result.CurrentPhoto?.Id;
+        ApplyCurrentPhoto(
+            result.CurrentPhoto,
+            result.CurrentIndex,
+            result.ActiveCount,
+            resetImageState: !preserveImage);
+
+        ViewerStatusText = result.Status switch
+        {
+            DeleteCurrentPhotoStatus.Deleted => "Foto removida",
+            DeleteCurrentPhotoStatus.Missing => "Arquivo ausente",
+            DeleteCurrentPhotoStatus.DeleteFailed => FormatFileError("Falha ao excluir", result.FileMoveResult),
+            DeleteCurrentPhotoStatus.NoCurrentPhoto => "Nenhuma foto ativa",
+            _ => string.Empty
+        };
+    }
+
+    public void ApplyUndoResult(UndoLastDeleteResult result)
+    {
+        ArgumentNullException.ThrowIfNull(result);
+
+        if (result.Status == UndoLastDeleteStatus.NoUndoAvailable)
+        {
+            ViewerStatusText = "Nada para desfazer";
+            return;
+        }
+
+        var preserveImage = HasCurrentImage && CurrentPhoto?.Id == result.CurrentPhoto?.Id;
+        ApplyCurrentPhoto(
+            result.CurrentPhoto,
+            result.CurrentIndex,
+            result.ActiveCount,
+            resetImageState: !preserveImage);
+
+        ViewerStatusText = result.Status switch
+        {
+            UndoLastDeleteStatus.Restored => "Foto restaurada",
+            UndoLastDeleteStatus.RestoreFailed => FormatFileError("Falha ao restaurar", result.FileMoveResult),
+            _ => string.Empty
+        };
     }
 
     public void SetFullscreen(bool isFullscreen)
@@ -254,10 +318,19 @@ public sealed class MainPageViewModel : INotifyPropertyChanged
         IsHomeVisible = true;
     }
 
-    private void ApplyCurrentPhoto(PhotoItem? photo, int currentIndex, int activeCount)
+    private void ApplyCurrentPhoto(
+        PhotoItem? photo,
+        int currentIndex,
+        int activeCount,
+        bool resetImageState = true)
     {
         CurrentPhoto = photo;
-        HasCurrentImage = false;
+        if (resetImageState)
+        {
+            HasCurrentImage = false;
+            IsImageLoading = false;
+        }
+
         CurrentFileName = photo?.FileName ?? string.Empty;
         CurrentImageAutomationName = string.IsNullOrWhiteSpace(CurrentFileName)
             ? "Foto atual"
@@ -265,7 +338,17 @@ public sealed class MainPageViewModel : INotifyPropertyChanged
         ViewerCounterText = photo is null || activeCount <= 0
             ? string.Empty
             : $"{Math.Clamp(currentIndex + 1, 1, activeCount)} / {activeCount}";
-        ViewerStatusText = photo is null ? "Nenhum JPEG encontrado" : "Aguardando imagem";
+        if (resetImageState)
+        {
+            ViewerStatusText = photo is null ? "Nenhum JPEG encontrado" : "Aguardando imagem";
+        }
+    }
+
+    private static string FormatFileError(string prefix, FileMoveResult? fileMoveResult)
+    {
+        return fileMoveResult is null || fileMoveResult.ErrorCode == FileMoveErrorCode.None
+            ? prefix
+            : $"{prefix}: {fileMoveResult.ErrorCode}";
     }
 
     private void SetProperty<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)

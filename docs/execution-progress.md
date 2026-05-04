@@ -70,7 +70,8 @@ Ultima atualizacao: 2026-05-04
 - [x] F3-08 - Implementar replay basico de journal.
 - [x] F3-09 - Tratar arquivo bloqueado no fluxo de delete.
 - [x] F3-10 - Tratar arquivo ausente no fluxo de delete.
-- [ ] F3-11 - Atualizar contadores em todas as transicoes.
+- [x] F3-11 - Atualizar contadores em todas as transicoes.
+- [x] F3-15 - Ligar `Delete` e `Ctrl+Z` no viewer.
 
 ## Bloqueios atuais
 
@@ -79,7 +80,8 @@ Ultima atualizacao: 2026-05-04
 - Conversao do resultado de decode para `ImageSource`/viewer WinUI ja existe para a primeira foto, com navegacao visual inicial por `Right`, `Left` e `Space`.
 - Fullscreen inicial ja usa `AppWindow`/`FullScreenPresenter`, `F` alterna, `Esc` sai, e o decode recaptura `DisplayContext` com estado fullscreen.
 - `FileMoveService` ja move para `_deletadas_evydencia`, restaura, resolve colisao e preserva `LastWriteTimeUtc`; ja esta ligado ao `DeleteCurrentPhotoUseCase`.
-- `DeleteManager`, `DeleteCurrentPhotoUseCase`, `UndoManager` e `UndoLastDeleteUseCase` ja validam `PendingDelete`, `Deleted`, `PendingRestore`, `Restored`, `Missing`, `DeleteFailed`, contadores e navegacao sem UI; `JsonlSessionJournalStore` ja registra delete/restore em JSONL; `ReplaySessionJournalUseCase` ja faz replay basico e reconciliacao inicial; ainda faltam atalhos `Delete`/`Ctrl+Z` no viewer.
+- `DeleteManager`, `DeleteCurrentPhotoUseCase`, `UndoManager` e `UndoLastDeleteUseCase` ja validam `PendingDelete`, `Deleted`, `PendingRestore`, `Restored`, `Missing`, `DeleteFailed`, contadores e navegacao; `JsonlSessionJournalStore` ja registra delete/restore em JSONL; `ReplaySessionJournalUseCase` ja faz replay basico e reconciliacao inicial; os atalhos `Delete` e `Ctrl+Z` ja chamam os use cases reais no viewer.
+- Overlay temporizado, retry visual de falha e fila de comandos para deletes muito rapidos ainda ficam para UX/performance posterior.
 - `WindowsDisplayContextService` captura `XamlRoot`, area util, escala de rasterizacao e estado fullscreen. Identificacao detalhada de monitor/display area fica para a fatia de segunda tela.
 
 ## Ultima validacao
@@ -154,6 +156,11 @@ Ultima atualizacao: 2026-05-04
 - [x] `tools/format.ps1` executado com sucesso apos 0023.
 - [x] `tools/build.ps1` executado com sucesso apos 0023: 0 warnings.
 - [x] `tools/test.ps1` executado com sucesso apos 0023: 109 testes.
+- [x] Fatia 0024 ligou `Delete` e `Ctrl+Z` ao viewer WinUI, com estado otimista, status discreto e recarga da foto atual/restaurada.
+- [x] `tools/test.ps1 -Filter "FullyQualifiedName~UiSmoke|FullyQualifiedName~Application|FullyQualifiedName~Integration"` executado com sucesso apos 0024: Application 33 testes, UiSmoke 10 testes, Integration 7 testes.
+- [x] `tools/format.ps1` executado com sucesso apos 0024.
+- [x] `tools/build.ps1` executado com sucesso apos 0024: 0 warnings.
+- [x] `tools/test.ps1` executado com sucesso apos 0024: 114 testes.
 
 ## Ultima fatia concluida
 
@@ -180,6 +187,7 @@ Ultima atualizacao: 2026-05-04
 - 0021 - `JsonlSessionJournalStore` com eventos JSONL append-only para delete e restore, integrado aos use cases sem UI.
 - 0022 - Replay basico de journal com `ReplaySessionJournalUseCase`, leitura JSONL, reconciliacao por filesystem e recuperacao de fotos deletadas nao escaneadas.
 - 0023 - Tratamento de arquivo bloqueado/ausente no delete, com `FileLocked`, `Missing`, contadores consistentes e journal `DeleteFailed`.
+- 0024 - Atalhos `Delete` e `Ctrl+Z` ligados ao viewer WinUI, chamando os use cases reais e preservando contadores/estado visual.
 
 ## Cobertura atual de testes
 
@@ -188,8 +196,8 @@ Ultima atualizacao: 2026-05-04
 - `Imaging.Tests`: 15 testes.
 - `Storage.Tests`: 16 testes.
 - `IntegrationTests`: 7 testes.
-- `UiSmokeTests`: 5 testes.
-- Total atual: 109 testes.
+- `UiSmokeTests`: 10 testes.
+- Total atual: 114 testes.
 
 ## Toolchain validado
 
