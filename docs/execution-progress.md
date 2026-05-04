@@ -28,7 +28,7 @@ Ultima atualizacao: 2026-05-04
 - [ ] F0-10 - Definir metas de performance reais.
 - [x] F0-11 - Validar .NET 10 + Windows App SDK 2.0.1.
 - [x] F0-12 - Implementar single-instance inicial com ativacao por pasta.
-- [ ] F0-19 - Validar single-instance em app registrado/empacotado com duas ativacoes reais. Bloqueado por sideload/developer mode desabilitado no ambiente atual.
+- [ ] F0-19 - Validar single-instance em app registrado/empacotado com duas ativacoes reais. MSIX dev assinado ja e gerado, mas instalacao ainda depende de confiar o certificado em `LocalMachine` ou usar certificado confiavel.
 - [x] F0-13 - Validar decode sem prender file handle.
 - [x] F0-14 - Criar `DisplayContext`.
 - [ ] F0-15 - Validar preview cache sem perda visual.
@@ -80,6 +80,7 @@ Ultima atualizacao: 2026-05-04
 - `ShellExtension` ainda nao tem projeto C++/WinRT. A decisao continua adiada para a fase de menu de contexto moderno.
 - `Launcher` minimo ja recebe pasta, valida caminho e encaminha para o app com `--folder`; os scripts HKCU de desenvolvimento instalam/removem `Abrir Escolher Fotos` para clique em pasta e no fundo da pasta.
 - Single-instance inicial ja usa `AppInstance.FindOrRegisterForKey` e `RedirectActivationToAsync` antes da criacao da janela. A validacao com app registrado/empacotado ainda precisa acontecer antes do menu de contexto do Explorer.
+- Empacotamento dev assinado ja tem scripts para gerar MSIX, confiar certificado em ambiente elevado, instalar/reinstalar e rodar smoke single-instance instalado.
 - Conversao do resultado de decode para `ImageSource`/viewer WinUI ja existe para a primeira foto, com navegacao visual inicial por `Right`, `Left` e `Space`.
 - Fullscreen inicial ja usa `AppWindow`/`FullScreenPresenter`, `F` alterna, `Esc` sai, e o decode recaptura `DisplayContext` com estado fullscreen.
 - `FileMoveService` ja move para `_deletadas_evydencia`, restaura, resolve colisao e preserva `LastWriteTimeUtc`; ja esta ligado ao `DeleteCurrentPhotoUseCase`.
@@ -181,6 +182,16 @@ Ultima atualizacao: 2026-05-04
 - [x] `tools/build.ps1 -Platform x64` executado com sucesso apos 0026: 0 warnings.
 - [x] `tools/test.ps1 -Filter "FullyQualifiedName~Launcher"` executado com sucesso apos 0026: Launcher 7 testes.
 - [x] `tools/test.ps1` executado com sucesso apos 0026: 122 testes.
+- [x] Fatia 0027 criou script de MSIX dev assinado e gerou pacote x64 em `artifacts/packages`.
+- [x] `tools/package-msix-dev.ps1` passou a assinar por `PackageCertificateThumbprint`; o publish ficou sem warnings de importacao de PFX, restando apenas aviso de symbols por ausencia de `mspdbcmf.exe`.
+- [x] `Get-AuthenticodeSignature` validou assinatura do MSIX depois de confiar o certificado em `CurrentUser\Root`.
+- [ ] `Add-AppxPackage` do MSIX dev ainda falhou com `0x800B0109`; a correcao exige confiar o certificado em `LocalMachine` via PowerShell elevado ou usar certificado confiavel.
+- [x] `tools/trust-msix-dev-cert-admin.ps1` validado em sessao nao elevada: falha com instrucao clara para PowerShell elevado.
+- [x] `tools/smoke-msix-single-instance.ps1` validado sem pacote instalado: falha com instrucao clara para package/install.
+- [x] `tools/format.ps1` executado com sucesso apos 0027.
+- [x] `tools/build.ps1` executado com sucesso apos 0027: 0 warnings.
+- [x] `tools/test.ps1` executado com sucesso apos 0027: 122 testes.
+- [ ] `tools/smoke-msix-single-instance.ps1` ainda depende do pacote instalado para validar duas ativacoes reais.
 
 ## Ultima fatia concluida
 
@@ -210,6 +221,7 @@ Ultima atualizacao: 2026-05-04
 - 0024 - Atalhos `Delete` e `Ctrl+Z` ligados ao viewer WinUI, chamando os use cases reais e preservando contadores/estado visual.
 - 0025 - Single-instance inicial com redirecionamento antes da janela e reativacao por pasta na instancia principal.
 - 0026 - Validacao de runtime/registro empacotado, `Launcher` minimo e fallback HKCU de menu de contexto de desenvolvimento.
+- 0027 - MSIX dev assinado e scripts de instalacao/smoke para desbloquear validacao single-instance empacotada; F0-19 permanece pendente ate instalar o pacote e passar o smoke.
 
 ## Cobertura atual de testes
 

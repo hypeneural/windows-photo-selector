@@ -43,11 +43,39 @@ Para o menu moderno do Windows 11, o plano continua sendo:
 
 O `ShellExtension` deve permanecer minimo e chamar o Launcher/AppActivation. Ele nao deve carregar `Core`, `Imaging`, `Storage` nem pipeline de viewer.
 
+## Empacotamento dev assinado
+
+A validacao real de single-instance para o menu moderno deve usar package identity. Para desenvolvimento local:
+
+```powershell
+.\tools\package-msix-dev.ps1
+```
+
+Se o Windows bloquear a instalacao com `0x800B0109`, confie o certificado em PowerShell elevado:
+
+```powershell
+.\tools\trust-msix-dev-cert-admin.ps1
+```
+
+Depois instale ou reinstale o pacote:
+
+```powershell
+.\tools\install-msix-dev.ps1 -Reinstall
+```
+
+Valide duas ativacoes reais do app instalado:
+
+```powershell
+.\tools\smoke-msix-single-instance.ps1
+```
+
+O item moderno com `IExplorerCommand` so deve avancar depois desse smoke passar.
+
 ## Validacao pendente
 
-O registro loose package com `Add-AppxPackage -Register` falhou no ambiente atual por politica de sideload/developer mode desabilitada. A validacao final do menu moderno depende de:
+O registro loose package com `Add-AppxPackage -Register` falhou no ambiente atual por politica de sideload/developer mode desabilitada. A fatia 0027 ja gera MSIX dev assinado, mas a instalacao ainda pode exigir confiar o certificado em `LocalMachine` via PowerShell elevado. A validacao final do menu moderno depende de:
 
-- habilitar Developer Mode/sideload ou usar instalador MSIX assinado confiavel;
-- registrar/instalar o pacote;
+- habilitar Developer Mode/sideload ou usar MSIX assinado com certificado confiavel;
+- registrar/instalar o pacote com package identity;
 - validar duas ativacoes reais;
 - implementar `IExplorerCommand`.

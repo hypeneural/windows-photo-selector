@@ -122,6 +122,15 @@ Menu de contexto classico para desenvolvimento:
 .\tools\uninstall-context-menu-dev.ps1
 ```
 
+MSIX dev assinado e smoke single-instance:
+
+```powershell
+.\tools\package-msix-dev.ps1
+.\tools\trust-msix-dev-cert-admin.ps1 # executar em PowerShell elevado se Add-AppxPackage retornar 0x800B0109
+.\tools\install-msix-dev.ps1 -Reinstall
+.\tools\smoke-msix-single-instance.ps1
+```
+
 ## Status atual
 
 Consulte o progresso de execucao em:
@@ -154,11 +163,12 @@ Estado ja validado:
 - single-instance inicial com `AppInstance`/`RedirectActivationToAsync` antes da criacao da janela.
 - `Launcher` minimo para receber pasta do Explorer, validar caminho e encaminhar para o app.
 - fallback HKCU de menu de contexto de desenvolvimento para clique em pasta e no fundo da pasta.
+- empacotamento MSIX dev assinado iniciado para validar single-instance instalado.
 
 Proximas fatias planejadas:
 
 - overlay temporizado, retry visual e polimento do fluxo de erro no viewer;
-- validar single-instance com MSIX registrado/instalado; no ambiente atual o registro loose package esta bloqueado por sideload/developer mode desabilitado;
+- validar single-instance com MSIX registrado/instalado; se o MSIX dev falhar com `0x800B0109`, confiar o certificado em `LocalMachine` com PowerShell elevado;
 - menu moderno do Explorer com `ShellExtension`/`IExplorerCommand`;
 
 ## Documentacao principal
