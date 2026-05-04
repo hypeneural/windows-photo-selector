@@ -112,9 +112,19 @@ public sealed class MainPageShortcutSourceTests
 
         StringAssert.Contains(source, "VirtualKey.Number1");
         StringAssert.Contains(source, "LoadActualSizePhotoAsync");
-        StringAssert.Contains(source, "DecodeActualSizeAsync");
+        StringAssert.Contains(source, "GetOrDecodeActualSizeAsync");
         StringAssert.Contains(source, "CalculateActualSizeBaseZoomFactor");
         StringAssert.Contains(source, "Zoom 100%");
+    }
+
+    [TestMethod]
+    public void MainPageUsesPreviewCacheAndPrefetch()
+    {
+        var source = File.ReadAllText(GetMainPageSourcePath());
+
+        StringAssert.Contains(source, "GetOrDecodePreviewAsync");
+        StringAssert.Contains(source, "SchedulePreviewPrefetch");
+        StringAssert.Contains(source, "PrefetchScheduler");
     }
 
     private static string GetMainPageSourcePath()

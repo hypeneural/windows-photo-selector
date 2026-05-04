@@ -4,7 +4,9 @@ using Evydencia.PhotoSelector.Application.UseCases;
 using Evydencia.PhotoSelector.Core.Deletion;
 using Evydencia.PhotoSelector.Core.Sessions;
 using Evydencia.PhotoSelector.Core.Undo;
+using Evydencia.PhotoSelector.Imaging.Cache;
 using Evydencia.PhotoSelector.Imaging.Decode;
+using Evydencia.PhotoSelector.Imaging.Prefetch;
 using Evydencia.PhotoSelector.Imaging.Sizing;
 using Evydencia.PhotoSelector.Storage.Filesystem;
 using Evydencia.PhotoSelector.Storage.Journal;
@@ -23,6 +25,9 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<UndoManager>();
         services.AddSingleton<DecodeTargetCalculator>();
         services.AddSingleton<JpegDecodeService>();
+        services.AddSingleton<MemoryImageCache>();
+        services.AddSingleton<IPreviewCacheService, PreviewCacheService>();
+        services.AddSingleton<PrefetchScheduler>();
         services.AddSingleton<FolderLaunchArgumentsParser>();
 
         services.AddTransient<IFolderScanner, FileSystemFolderScanner>();

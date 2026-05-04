@@ -9,7 +9,9 @@ using Evydencia.PhotoSelector.Application.Models;
 using Evydencia.PhotoSelector.Application.UseCases;
 using Evydencia.PhotoSelector.Core.Photos;
 using Evydencia.PhotoSelector.Core.Sessions;
+using Evydencia.PhotoSelector.Imaging.Cache;
 using Evydencia.PhotoSelector.Imaging.Decode;
+using Evydencia.PhotoSelector.Imaging.Prefetch;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
@@ -75,6 +77,11 @@ public sealed partial class MainPage : Page, IDisposable
         _imageLoadCancellation?.Cancel();
         _imageLoadCancellation?.Dispose();
         _imageLoadCancellation = null;
+        if (Microsoft.UI.Xaml.Application.Current is App app)
+        {
+            app.Services.GetService<PrefetchScheduler>()?.Cancel();
+        }
+
         _viewerOverlayHideTimer.Stop();
         _viewerOverlayHideTimer.Tick -= OnViewerOverlayHideTimerTick;
         GC.SuppressFinalize(this);
@@ -587,6 +594,7 @@ public sealed partial class MainPage : Page, IDisposable
             _currentSession = result?.Status == OpenFolderFromArgumentsStatus.Opened
                 ? result.SessionResult?.Session
                 : null;
+            app.Services.GetRequiredService<PrefetchScheduler>().Cancel();
             SyncVisualState();
 
             if (result?.Status == OpenFolderFromArgumentsStatus.Opened)
@@ -921,8 +929,8 @@ public sealed partial class MainPage : Page, IDisposable
                 .GetRequiredService<WindowsDisplayContextService>()
                 .Capture(ViewerHost, ViewModel.IsFullscreen);
             var decodeResult = await app.Services
-                .GetRequiredService<JpegDecodeService>()
-                .DecodeActualSizeAsync(ViewModel.CurrentPhoto.FullPath, cancellationToken);
+                .GetRequiredService<IPreviewCacheService>()
+                .GetOrDecodeActualSizeAsync(ViewModel.CurrentPhoto, cancellationToken);
 
             cancellationToken.ThrowIfCancellationRequested();
             if (ViewModel.CurrentPhoto?.Id != requestedPhotoId)
@@ -1032,8 +1040,8 @@ public sealed partial class MainPage : Page, IDisposable
                 .GetRequiredService<WindowsDisplayContextService>()
                 .Capture(ViewerHost, ViewModel.IsFullscreen);
             var decodeResult = await app.Services
-                .GetRequiredService<JpegDecodeService>()
-                .DecodeForDisplayAsync(ViewModel.CurrentPhoto.FullPath, displayContext, cancellationToken);
+                .GetRequiredService<IPreviewCacheService>()
+                .GetOrDecodePreviewAsync(ViewModel.CurrentPhoto, displayContext, cancellationToken);
 
             if (!decodeResult.IsSuccess)
             {
@@ -1058,6 +1066,7 @@ public sealed partial class MainPage : Page, IDisposable
             ViewModel.CompleteImageLoad();
             SyncVisualState();
             ShowViewerOverlay();
+            SchedulePreviewPrefetch(app, displayContext);
         }
         catch (OperationCanceledException)
         {
@@ -1067,6 +1076,18 @@ public sealed partial class MainPage : Page, IDisposable
             ViewModel.FailImageLoad(exception.Message);
             SyncVisualState();
         }
+    }
+
+    private void SchedulePreviewPrefetch(App app, DisplayContextSnapshot displayContext)
+    {
+        if (_currentSession is null || ViewModel.CurrentPhoto is null)
+        {
+            return;
+        }
+
+        app.Services
+            .GetRequiredService<PrefetchScheduler>()
+            .Schedule(_currentSession, ViewModel.CurrentPhoto, displayContext);
     }
 
     private void OnUnloaded(object sender, RoutedEventArgs e)

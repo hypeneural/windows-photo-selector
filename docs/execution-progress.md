@@ -31,7 +31,7 @@ Ultima atualizacao: 2026-05-04
 - [ ] F0-19 - Validar single-instance em app registrado/empacotado com duas ativacoes reais. MSIX dev assinado ja e gerado, mas instalacao ainda depende de confiar o certificado em `LocalMachine\TrustedPeople` ou usar certificado confiavel.
 - [x] F0-13 - Validar decode sem prender file handle.
 - [x] F0-14 - Criar `DisplayContext`.
-- [ ] F0-15 - Validar preview cache sem perda visual.
+- [x] F0-15 - Validar preview cache sem perda visual perceptivel na primeira fatia: cache em memoria guarda pixels decodificados, sem recompressao em JPEG.
 - [x] F0-16 - ADR de fonte da verdade criado.
 - [x] F0-17 - Governanca de build documentada.
 - [x] F0-18 - Camada Application definida.
@@ -64,6 +64,7 @@ Ultima atualizacao: 2026-05-04
 - [x] F2-08 - Adicionar pan/arrastar quando a imagem esta com zoom, reset por duplo clique e atalhos `+`, `-`, `0`.
 - [x] F2-09 - Adicionar overlay temporizado no viewer.
 - [x] F2-10 - Adicionar atalho `1` com decode full-res sob demanda para zoom 100% real.
+- [x] F2-11 - Adicionar cache em memoria LRU e prefetch de previews proximos/anteriores.
 
 ## Fase 3 - Delete e undo robusto
 
@@ -88,11 +89,11 @@ Ultima atualizacao: 2026-05-04
 - Empacotamento dev assinado ja tem scripts para gerar MSIX, confiar certificado em ambiente elevado, instalar/reinstalar e rodar smoke single-instance instalado.
 - Conversao do resultado de decode para `ImageSource`/viewer WinUI ja existe para a primeira foto, com navegacao visual por `Right`, `Left`, `Space`, `Home` e `End`; atalhos do viewer agora usam `KeyboardAccelerator` na pagina e `KeyDown` fica como fallback do `ViewerHost`.
 - Fullscreen inicial ja usa `AppWindow`/`FullScreenPresenter`, `F` alterna, `Esc` sai, e o decode recaptura `DisplayContext` com estado fullscreen.
-- Zoom optico sobre o preview atual ja existe por roda do mouse e atalhos `+`/`-`; `0` e duplo clique retornam para fit; pan/arrastar funciona quando a imagem esta ampliada; a imagem ficou `IsHitTestVisible=false` para manter os eventos de ponteiro no `ViewerHost`. O atalho `1` agora faz decode full-res sob demanda, respeita EXIF e calcula escala para 100% real em pixels fisicos; cache/prefetch desse full-res ainda ficam para a fatia de performance.
+- Zoom optico sobre o preview atual ja existe por roda do mouse e atalhos `+`/`-`; `0` e duplo clique retornam para fit; pan/arrastar funciona quando a imagem esta ampliada; a imagem ficou `IsHitTestVisible=false` para manter os eventos de ponteiro no `ViewerHost`. O atalho `1` agora faz decode full-res sob demanda, respeita EXIF e calcula escala para 100% real em pixels fisicos; o resultado pode ser reutilizado pelo cache LRU, mas prefetch continua restrito a previews fit.
 - `FileMoveService` ja move para `_deletadas_evydencia`, restaura, resolve colisao e preserva `LastWriteTimeUtc`; ja esta ligado ao `DeleteCurrentPhotoUseCase`.
 - `DeleteManager`, `DeleteCurrentPhotoUseCase`, `UndoManager` e `UndoLastDeleteUseCase` ja validam `PendingDelete`, `Deleted`, `PendingRestore`, `Restored`, `Missing`, `DeleteFailed`, contadores e navegacao; `JsonlSessionJournalStore` ja registra delete/restore em JSONL; `ReplaySessionJournalUseCase` ja faz replay basico e reconciliacao inicial; os atalhos `Delete` e `Ctrl+Z` ja chamam os use cases reais no viewer.
 - Overlay temporizado ja esconde status/contador apos atividade. Retry visual de falha e fila de comandos para deletes muito rapidos ainda ficam para UX/performance posterior.
-- Cache/prefetch LRU, thumbnail/filmstrip, configuracoes, ultimas sessoes, shell extension moderno `IExplorerCommand`, smoke MSIX empacotado e segunda tela seguem pendentes.
+- Cache em memoria LRU e prefetch leve de previews ja existem. Cache em disco, thumbnail/filmstrip, configuracoes, ultimas sessoes, shell extension moderno `IExplorerCommand`, smoke MSIX empacotado e segunda tela seguem pendentes.
 - `WindowsDisplayContextService` captura `XamlRoot`, area util, escala de rasterizacao e estado fullscreen. Identificacao detalhada de monitor/display area fica para a fatia de segunda tela.
 
 ## Ultima validacao
@@ -238,6 +239,12 @@ Ultima atualizacao: 2026-05-04
 - [x] `tools/format.ps1` executado com sucesso apos 0033.
 - [x] `tools/build.ps1` executado com sucesso apos 0033: 0 warnings.
 - [x] `tools/test.ps1` executado com sucesso apos 0033: 135 testes.
+- [x] Fatia 0034 implementou `MemoryImageCache` LRU, `PreviewCacheService` e `PrefetchScheduler` para previews fit, com actual-size reutilizavel por cache e prefetch restrito a proximas/anteriores.
+- [x] `tools/test.ps1 -Filter "FullyQualifiedName~Imaging|FullyQualifiedName~UiSmoke"` executado com sucesso apos 0034: Imaging 25 testes, UiSmoke 19 testes.
+- [x] `tools/format.ps1` executado com sucesso apos 0034.
+- [x] `tools/build.ps1` executado com sucesso apos 0034: 0 warnings.
+- [x] `tools/test.ps1` executado com sucesso apos 0034: 143 testes.
+- [x] Smoke real unpackaged dev abriu a pasta `C:\Users\Usuario\Desktop\bkp geral\BKP 1712\SD 3\DCIM\100CAROL` apos 0034.
 
 ## Ultima fatia concluida
 
@@ -274,17 +281,18 @@ Ultima atualizacao: 2026-05-04
 - 0031 - Tooltip fixo de acelerador ocultado e zoom por roda do mouse implementado no viewer.
 - 0032 - Pan/arrastar em zoom, reset por duplo clique, atalhos `+`/`-`/`0` e overlay temporizado no viewer.
 - 0033 - Atalho `1` com decode full-res sob demanda para zoom 100% real, mantendo fit normal com preview dimensionado.
+- 0034 - Cache em memoria LRU para previews/actual-size sob demanda e prefetch de previews das proximas 3 fotos e anteriores 2.
 
 ## Cobertura atual de testes
 
 - `Core.Tests`: 33 testes.
 - `Application.Tests`: 36 testes.
-- `Imaging.Tests`: 18 testes.
+- `Imaging.Tests`: 25 testes.
 - `Storage.Tests`: 16 testes.
 - `IntegrationTests`: 7 testes.
 - `Launcher.Tests`: 7 testes.
-- `UiSmokeTests`: 18 testes.
-- Total atual: 135 testes.
+- `UiSmokeTests`: 19 testes.
+- Total atual: 143 testes.
 
 ## Toolchain validado
 
