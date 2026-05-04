@@ -4,6 +4,7 @@ using Evydencia.PhotoSelector.App.Imaging;
 using Evydencia.PhotoSelector.App.Windowing;
 using Evydencia.PhotoSelector.App.ViewModels;
 using Evydencia.PhotoSelector.Application.Activation;
+using Evydencia.PhotoSelector.Application.Display;
 using Evydencia.PhotoSelector.Application.Models;
 using Evydencia.PhotoSelector.Application.UseCases;
 using Evydencia.PhotoSelector.Core.Photos;
@@ -27,6 +28,8 @@ public sealed partial class MainPage : Page, IDisposable
 {
     private const VirtualKey MainKeyboardMinusKey = (VirtualKey)189;
     private const VirtualKey MainKeyboardPlusKey = (VirtualKey)187;
+    private const double ViewerActualSizeZoomMax = 32.0;
+    private const double ViewerActualSizeZoomMin = 0.05;
     private const double ViewerDoubleClickMaxDistance = 24.0;
     private static readonly TimeSpan ViewerOverlayVisibleDuration = TimeSpan.FromSeconds(2);
     private static readonly TimeSpan ViewerPointerDoubleClickThreshold = TimeSpan.FromMilliseconds(500);
@@ -45,7 +48,9 @@ public sealed partial class MainPage : Page, IDisposable
     private bool _fileCommandInProgress;
     private bool _folderActivationInProgress;
     private CancellationTokenSource? _imageLoadCancellation;
+    private bool _isActualSizeImageLoaded;
     private bool _isViewerPanning;
+    private double _actualSizeBaseZoomFactor = ViewerZoomMin;
     private DateTimeOffset? _lastViewerClickAt;
     private Point _lastViewerClickPoint;
     private Point _lastViewerPanPoint;
@@ -133,7 +138,7 @@ public sealed partial class MainPage : Page, IDisposable
         ViewerHost.Focus(FocusState.Programmatic);
     }
 
-    private void OnViewerPointerPressed(object sender, PointerRoutedEventArgs e)
+    private async void OnViewerPointerPressed(object sender, PointerRoutedEventArgs e)
     {
         if (!ViewModel.IsViewerVisible || ViewModel.CurrentPhoto is null)
         {
@@ -141,7 +146,8 @@ public sealed partial class MainPage : Page, IDisposable
         }
 
         var pointerPoint = e.GetCurrentPoint(ViewerHost);
-        if (TryResetViewerZoomFromPointerDoubleClick(pointerPoint.Position))
+        if (Microsoft.UI.Xaml.Application.Current is App app
+            && await TryResetViewerZoomFromPointerDoubleClickAsync(app, pointerPoint.Position))
         {
             e.Handled = true;
             ViewerHost.Focus(FocusState.Pointer);
@@ -215,14 +221,15 @@ public sealed partial class MainPage : Page, IDisposable
         }
     }
 
-    private void OnViewerDoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
+    private async void OnViewerDoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
     {
-        if (_viewerZoomFactor <= ViewerPanResetZoomThreshold)
+        if (_viewerZoomFactor <= ViewerPanResetZoomThreshold
+            || Microsoft.UI.Xaml.Application.Current is not App app)
         {
             return;
         }
 
-        ResetViewerZoom(showStatus: true);
+        await ResetViewerToFitAsync(app, showStatus: true);
         e.Handled = true;
         ViewerHost.Focus(FocusState.Programmatic);
     }
@@ -243,6 +250,7 @@ public sealed partial class MainPage : Page, IDisposable
         AddViewerKeyboardAccelerator(VirtualKey.Subtract);
         AddViewerKeyboardAccelerator(MainKeyboardMinusKey);
         AddViewerKeyboardAccelerator(VirtualKey.Number0);
+        AddViewerKeyboardAccelerator(VirtualKey.Number1);
     }
 
     private void AddViewerKeyboardAccelerator(
@@ -336,7 +344,7 @@ public sealed partial class MainPage : Page, IDisposable
             return;
         }
 
-        if (HandleViewerZoomShortcut(key))
+        if (await HandleViewerZoomShortcutAsync(app, key))
         {
             return;
         }
@@ -689,7 +697,7 @@ public sealed partial class MainPage : Page, IDisposable
         return (state & CoreVirtualKeyStates.Down) == CoreVirtualKeyStates.Down;
     }
 
-    private bool TryResetViewerZoomFromPointerDoubleClick(Point pointerPosition)
+    private async Task<bool> TryResetViewerZoomFromPointerDoubleClickAsync(App app, Point pointerPosition)
     {
         var now = DateTimeOffset.UtcNow;
         var isDoubleClick = _lastViewerClickAt.HasValue
@@ -705,7 +713,7 @@ public sealed partial class MainPage : Page, IDisposable
         }
 
         _lastViewerClickAt = null;
-        ResetViewerZoom(showStatus: true);
+        await ResetViewerToFitAsync(app, showStatus: true);
         return true;
     }
 
@@ -727,11 +735,23 @@ public sealed partial class MainPage : Page, IDisposable
         }
     }
 
-    private bool HandleViewerZoomShortcut(VirtualKey key)
+    private async Task<bool> HandleViewerZoomShortcutAsync(App app, VirtualKey key)
     {
         if (!IsViewerZoomShortcut(key))
         {
             return false;
+        }
+
+        if (key == VirtualKey.Number1)
+        {
+            await LoadActualSizePhotoAsync(app);
+            return true;
+        }
+
+        if (key == VirtualKey.Number0)
+        {
+            await ResetViewerToFitAsync(app, showStatus: true);
+            return true;
         }
 
         if (IsViewerZoomInShortcut(key))
@@ -746,15 +766,15 @@ public sealed partial class MainPage : Page, IDisposable
             return true;
         }
 
-        ResetViewerZoom(showStatus: true);
-        return true;
+        return false;
     }
 
     private static bool IsViewerZoomShortcut(VirtualKey key)
     {
         return IsViewerZoomInShortcut(key)
             || IsViewerZoomOutShortcut(key)
-            || key == VirtualKey.Number0;
+            || key == VirtualKey.Number0
+            || key == VirtualKey.Number1;
     }
 
     private static bool IsViewerZoomInShortcut(VirtualKey key)
@@ -770,7 +790,9 @@ public sealed partial class MainPage : Page, IDisposable
     private void ApplyViewerZoom(double zoomFactor, bool showStatus, Point? anchorPoint = null)
     {
         var previousZoomFactor = _viewerZoomFactor;
-        _viewerZoomFactor = Math.Clamp(zoomFactor, ViewerZoomMin, ViewerZoomMax);
+        var minZoomFactor = _isActualSizeImageLoaded ? ViewerActualSizeZoomMin : ViewerZoomMin;
+        var maxZoomFactor = _isActualSizeImageLoaded ? ViewerActualSizeZoomMax : ViewerZoomMax;
+        _viewerZoomFactor = Math.Clamp(zoomFactor, minZoomFactor, maxZoomFactor);
 
         if (anchorPoint.HasValue
             && previousZoomFactor > 0
@@ -795,9 +817,9 @@ public sealed partial class MainPage : Page, IDisposable
             return;
         }
 
-        ViewModel.SetViewerStatus(_viewerZoomFactor <= ViewerZoomMin + 0.01
+        ViewModel.SetViewerStatus(_viewerZoomFactor <= ViewerZoomMin + 0.01 && !_isActualSizeImageLoaded
             ? string.Empty
-            : $"Zoom {Math.Round(_viewerZoomFactor * 100)}%");
+            : FormatViewerZoomStatus());
         SyncVisualState();
         ShowViewerOverlay();
     }
@@ -840,6 +862,7 @@ public sealed partial class MainPage : Page, IDisposable
 
     private void ResetViewerZoom(bool showStatus = false)
     {
+        ResetActualSizeState();
         _viewerZoomFactor = ViewerZoomMin;
         _viewerPanX = 0;
         _viewerPanY = 0;
@@ -854,6 +877,135 @@ public sealed partial class MainPage : Page, IDisposable
         ViewModel.SetViewerStatus("Ajustado a tela");
         SyncVisualState();
         ShowViewerOverlay();
+    }
+
+    private async Task ResetViewerToFitAsync(App app, bool showStatus)
+    {
+        var reloadPreview = _isActualSizeImageLoaded && ViewModel.CurrentPhoto is not null;
+        ResetViewerZoom(showStatus);
+
+        if (reloadPreview)
+        {
+            await LoadCurrentPhotoAsync(app);
+            if (showStatus)
+            {
+                ViewModel.SetViewerStatus("Ajustado a tela");
+                SyncVisualState();
+                ShowViewerOverlay();
+            }
+        }
+    }
+
+    private async Task LoadActualSizePhotoAsync(App app)
+    {
+        if (ViewModel.CurrentPhoto is null)
+        {
+            return;
+        }
+
+        _imageLoadCancellation?.Cancel();
+        _imageLoadCancellation?.Dispose();
+        _imageLoadCancellation = new CancellationTokenSource();
+        var cancellationToken = _imageLoadCancellation.Token;
+        var requestedPhotoId = ViewModel.CurrentPhoto.Id;
+
+        ViewModel.SetViewerStatus("Carregando 100%");
+        SyncVisualState();
+        ShowViewerOverlay();
+
+        try
+        {
+            await Task.Yield();
+
+            var displayContext = app.Services
+                .GetRequiredService<WindowsDisplayContextService>()
+                .Capture(ViewerHost, ViewModel.IsFullscreen);
+            var decodeResult = await app.Services
+                .GetRequiredService<JpegDecodeService>()
+                .DecodeActualSizeAsync(ViewModel.CurrentPhoto.FullPath, cancellationToken);
+
+            cancellationToken.ThrowIfCancellationRequested();
+            if (ViewModel.CurrentPhoto?.Id != requestedPhotoId)
+            {
+                return;
+            }
+
+            if (!decodeResult.IsSuccess)
+            {
+                ViewModel.SetViewerStatus($"Falha ao carregar 100%: {decodeResult.ErrorCode}");
+                SyncVisualState();
+                ShowViewerOverlay();
+                return;
+            }
+
+            var imageSource = await app.Services
+                .GetRequiredService<ViewerImageSourceFactory>()
+                .CreateAsync(decodeResult, cancellationToken);
+
+            cancellationToken.ThrowIfCancellationRequested();
+            if (imageSource is null)
+            {
+                ViewModel.SetViewerStatus("Falha ao preparar 100%");
+                SyncVisualState();
+                ShowViewerOverlay();
+                return;
+            }
+
+            CurrentPhotoImage.Source = imageSource;
+            ViewModel.CompleteImageLoad();
+            ApplyActualSizeZoom(decodeResult, displayContext);
+            ViewModel.SetViewerStatus("Zoom 100%");
+            SyncVisualState();
+            ShowViewerOverlay();
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (Exception exception)
+        {
+            ViewModel.SetViewerStatus($"Falha ao carregar 100%: {exception.Message}");
+            SyncVisualState();
+            ShowViewerOverlay();
+        }
+    }
+
+    private void ApplyActualSizeZoom(ImageDecodeResult decodeResult, DisplayContextSnapshot displayContext)
+    {
+        _isActualSizeImageLoaded = true;
+        _actualSizeBaseZoomFactor = CalculateActualSizeBaseZoomFactor(decodeResult, displayContext);
+        _viewerZoomFactor = _actualSizeBaseZoomFactor;
+        _viewerPanX = 0;
+        _viewerPanY = 0;
+        ApplyViewerTransform();
+    }
+
+    private static double CalculateActualSizeBaseZoomFactor(
+        ImageDecodeResult decodeResult,
+        DisplayContextSnapshot displayContext)
+    {
+        var fitScale = Math.Min(
+            displayContext.ViewerUsableWidthPixels / (double)decodeResult.PixelWidth,
+            displayContext.ViewerUsableHeightPixels / (double)decodeResult.PixelHeight);
+        if (!double.IsFinite(fitScale) || fitScale <= 0)
+        {
+            return ViewerZoomMin;
+        }
+
+        return Math.Clamp(1 / fitScale, ViewerActualSizeZoomMin, ViewerActualSizeZoomMax);
+    }
+
+    private string FormatViewerZoomStatus()
+    {
+        var zoomPercent = _isActualSizeImageLoaded && _actualSizeBaseZoomFactor > 0
+            ? (_viewerZoomFactor / _actualSizeBaseZoomFactor) * 100
+            : _viewerZoomFactor * 100;
+        return $"Zoom {Math.Round(zoomPercent)}%";
+    }
+
+    private void ResetActualSizeState()
+    {
+        _isActualSizeImageLoaded = false;
+        _actualSizeBaseZoomFactor = ViewerZoomMin;
     }
 
     private async Task LoadCurrentPhotoAsync(App app)
@@ -902,6 +1054,7 @@ public sealed partial class MainPage : Page, IDisposable
             }
 
             CurrentPhotoImage.Source = imageSource;
+            ResetActualSizeState();
             ViewModel.CompleteImageLoad();
             SyncVisualState();
             ShowViewerOverlay();

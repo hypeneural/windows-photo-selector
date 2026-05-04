@@ -73,6 +73,55 @@ public sealed class JpegDecodeServiceTests
     }
 
     [TestMethod]
+    public async Task DecodeActualSizeAsyncDecodesOriginalDimensions()
+    {
+        using var folder = TemporaryFolder.Create();
+        var filePath = Path.Combine(folder.Path, "actual-size.jpg");
+        await JpegTestImage.WriteAsync(filePath, width: 80, height: 40);
+
+        var result = await new JpegDecodeService().DecodeActualSizeAsync(filePath);
+
+        Assert.IsTrue(result.IsSuccess, result.ErrorMessage);
+        Assert.AreEqual(80, result.PixelWidth);
+        Assert.AreEqual(40, result.PixelHeight);
+        Assert.HasCount(80 * 40 * 4, result.PixelData);
+    }
+
+    [TestMethod]
+    public async Task DecodeActualSizeAsyncDoesNotKeepFileHandleAfterDecode()
+    {
+        using var folder = TemporaryFolder.Create();
+        var filePath = Path.Combine(folder.Path, "actual-size-handle.jpg");
+        var movedPath = Path.Combine(folder.Path, "actual-size-handle-moved.jpg");
+        await JpegTestImage.WriteAsync(filePath, width: 24, height: 12);
+
+        var result = await new JpegDecodeService().DecodeActualSizeAsync(filePath);
+        File.Move(filePath, movedPath);
+
+        Assert.IsTrue(result.IsSuccess, result.ErrorMessage);
+        Assert.IsFalse(File.Exists(filePath));
+        Assert.IsTrue(File.Exists(movedPath));
+    }
+
+    [TestMethod]
+    public async Task DecodeActualSizeAsyncRespectsExifOrientation6()
+    {
+        using var folder = TemporaryFolder.Create();
+        var filePath = Path.Combine(folder.Path, "actual-size-orientation-6.jpg");
+        await JpegTestImage.WriteQuadrantsWithOrientationAsync(filePath, width: 80, height: 40, exifOrientation: 6);
+
+        var result = await new JpegDecodeService().DecodeActualSizeAsync(filePath);
+
+        Assert.IsTrue(result.IsSuccess, result.ErrorMessage);
+        Assert.AreEqual(40, result.PixelWidth);
+        Assert.AreEqual(80, result.PixelHeight);
+        Assert.AreEqual(TestQuadrantColor.Blue, Sample(result, 0.25, 0.25));
+        Assert.AreEqual(TestQuadrantColor.Red, Sample(result, 0.75, 0.25));
+        Assert.AreEqual(TestQuadrantColor.Yellow, Sample(result, 0.25, 0.75));
+        Assert.AreEqual(TestQuadrantColor.Green, Sample(result, 0.75, 0.75));
+    }
+
+    [TestMethod]
     public async Task DecodeForDisplayAsyncRespectsExifOrientation6WithoutDoubleApplyingDimensions()
     {
         using var folder = TemporaryFolder.Create();

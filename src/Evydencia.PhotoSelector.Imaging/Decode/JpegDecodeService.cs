@@ -95,6 +95,46 @@ public sealed class JpegDecodeService
         }
     }
 
+    public async Task<ImageDecodeResult> DecodeActualSizeAsync(
+        string filePath,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(filePath))
+        {
+            throw new ArgumentException("File path cannot be empty.", nameof(filePath));
+        }
+
+        try
+        {
+            var signatureError = await ProbeAsync(filePath, cancellationToken).ConfigureAwait(false);
+            if (signatureError != ImageDecodeErrorCode.None)
+            {
+                return ImageDecodeResult.Failure(filePath, signatureError);
+            }
+
+            await using var fileStream = JpegSignatureProbe.OpenRead(filePath);
+            using var randomAccessStream = fileStream.AsRandomAccessStream();
+
+            var decoder = await BitmapDecoder
+                .CreateAsync(BitmapDecoder.JpegDecoderId, randomAccessStream)
+                .AsTask(cancellationToken)
+                .ConfigureAwait(false);
+
+            var target = CalculateActualSizeTarget(decoder);
+            var frame = await decoder
+                .GetFrameAsync(0)
+                .AsTask(cancellationToken)
+                .ConfigureAwait(false);
+
+            return await DecodeFrameAsync(filePath, frame, target, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception exception)
+        {
+            var errorCode = MapException(exception);
+            return ImageDecodeResult.Failure(filePath, errorCode, exception.Message);
+        }
+    }
+
     private async Task<ImageDecodeResult> DecodeWithTargetAsync(
         string filePath,
         DecodeTarget target,
@@ -168,6 +208,26 @@ public sealed class JpegDecodeService
             rawHeight,
             exifOrientationForSizing,
             displayContext));
+    }
+
+    private static DecodeTarget CalculateActualSizeTarget(BitmapDecoder decoder)
+    {
+        var rawWidth = checked((int)decoder.PixelWidth);
+        var rawHeight = checked((int)decoder.PixelHeight);
+        var orientedWidth = checked((int)decoder.OrientedPixelWidth);
+        var orientedHeight = checked((int)decoder.OrientedPixelHeight);
+
+        return new DecodeTarget(
+            orientedWidth,
+            orientedHeight,
+            fitWidth: orientedWidth,
+            fitHeight: orientedHeight,
+            orientedTargetWidth: orientedWidth,
+            orientedTargetHeight: orientedHeight,
+            decodePixelWidth: rawWidth,
+            decodePixelHeight: rawHeight,
+            orientationSwapsDimensions: DecoderSwapsDimensions(decoder),
+            qualityMargin: 1.0);
     }
 
     private static bool DecoderSwapsDimensions(BitmapDecoder decoder)

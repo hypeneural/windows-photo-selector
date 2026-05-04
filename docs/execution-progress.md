@@ -63,6 +63,7 @@ Ultima atualizacao: 2026-05-04
 - [x] F2-07 - Esconder tooltip de aceleradores e adicionar zoom por roda do mouse.
 - [x] F2-08 - Adicionar pan/arrastar quando a imagem esta com zoom, reset por duplo clique e atalhos `+`, `-`, `0`.
 - [x] F2-09 - Adicionar overlay temporizado no viewer.
+- [x] F2-10 - Adicionar atalho `1` com decode full-res sob demanda para zoom 100% real.
 
 ## Fase 3 - Delete e undo robusto
 
@@ -87,7 +88,7 @@ Ultima atualizacao: 2026-05-04
 - Empacotamento dev assinado ja tem scripts para gerar MSIX, confiar certificado em ambiente elevado, instalar/reinstalar e rodar smoke single-instance instalado.
 - Conversao do resultado de decode para `ImageSource`/viewer WinUI ja existe para a primeira foto, com navegacao visual por `Right`, `Left`, `Space`, `Home` e `End`; atalhos do viewer agora usam `KeyboardAccelerator` na pagina e `KeyDown` fica como fallback do `ViewerHost`.
 - Fullscreen inicial ja usa `AppWindow`/`FullScreenPresenter`, `F` alterna, `Esc` sai, e o decode recaptura `DisplayContext` com estado fullscreen.
-- Zoom optico sobre o preview atual ja existe por roda do mouse e atalhos `+`/`-`; `0` e duplo clique retornam para fit; pan/arrastar funciona quando a imagem esta ampliada; a imagem ficou `IsHitTestVisible=false` para manter os eventos de ponteiro no `ViewerHost`. O atalho `1` e re-decode full-res para zoom 100% ainda ficam pendentes para a fatia de Imaging/full-res.
+- Zoom optico sobre o preview atual ja existe por roda do mouse e atalhos `+`/`-`; `0` e duplo clique retornam para fit; pan/arrastar funciona quando a imagem esta ampliada; a imagem ficou `IsHitTestVisible=false` para manter os eventos de ponteiro no `ViewerHost`. O atalho `1` agora faz decode full-res sob demanda, respeita EXIF e calcula escala para 100% real em pixels fisicos; cache/prefetch desse full-res ainda ficam para a fatia de performance.
 - `FileMoveService` ja move para `_deletadas_evydencia`, restaura, resolve colisao e preserva `LastWriteTimeUtc`; ja esta ligado ao `DeleteCurrentPhotoUseCase`.
 - `DeleteManager`, `DeleteCurrentPhotoUseCase`, `UndoManager` e `UndoLastDeleteUseCase` ja validam `PendingDelete`, `Deleted`, `PendingRestore`, `Restored`, `Missing`, `DeleteFailed`, contadores e navegacao; `JsonlSessionJournalStore` ja registra delete/restore em JSONL; `ReplaySessionJournalUseCase` ja faz replay basico e reconciliacao inicial; os atalhos `Delete` e `Ctrl+Z` ja chamam os use cases reais no viewer.
 - Overlay temporizado ja esconde status/contador apos atividade. Retry visual de falha e fila de comandos para deletes muito rapidos ainda ficam para UX/performance posterior.
@@ -231,6 +232,12 @@ Ultima atualizacao: 2026-05-04
 - [x] `tools/format.ps1` executado com sucesso apos 0032.
 - [x] `tools/build.ps1` executado com sucesso apos 0032: 0 warnings.
 - [x] `tools/test.ps1` executado com sucesso apos 0032: 131 testes.
+- [x] Fatia 0033 implementou `DecodeActualSizeAsync`, atalho `1` para 100% real, reset `0` recarregando preview fit e testes de full-res/orientacao/file handle.
+- [x] Smoke real automatizado validou `1`: `Carregando 100%` -> `Zoom 100%`, e `0`: `Ajustado a tela`, na pasta real `C:\Users\Usuario\Desktop\bkp geral\BKP 1712\SD 3\DCIM\100CAROL`.
+- [x] `tools/test.ps1 -Filter "FullyQualifiedName~Imaging|FullyQualifiedName~UiSmoke"` executado com sucesso apos 0033: Imaging 18 testes, UiSmoke 18 testes.
+- [x] `tools/format.ps1` executado com sucesso apos 0033.
+- [x] `tools/build.ps1` executado com sucesso apos 0033: 0 warnings.
+- [x] `tools/test.ps1` executado com sucesso apos 0033: 135 testes.
 
 ## Ultima fatia concluida
 
@@ -266,17 +273,18 @@ Ultima atualizacao: 2026-05-04
 - 0030 - Atalhos do viewer corrigidos com `KeyboardAccelerator` de pagina, fallback `KeyDown`, `Home`/`End` e smoke manual automatizado de navegacao/delete/undo.
 - 0031 - Tooltip fixo de acelerador ocultado e zoom por roda do mouse implementado no viewer.
 - 0032 - Pan/arrastar em zoom, reset por duplo clique, atalhos `+`/`-`/`0` e overlay temporizado no viewer.
+- 0033 - Atalho `1` com decode full-res sob demanda para zoom 100% real, mantendo fit normal com preview dimensionado.
 
 ## Cobertura atual de testes
 
 - `Core.Tests`: 33 testes.
 - `Application.Tests`: 36 testes.
-- `Imaging.Tests`: 15 testes.
+- `Imaging.Tests`: 18 testes.
 - `Storage.Tests`: 16 testes.
 - `IntegrationTests`: 7 testes.
 - `Launcher.Tests`: 7 testes.
-- `UiSmokeTests`: 17 testes.
-- Total atual: 131 testes.
+- `UiSmokeTests`: 18 testes.
+- Total atual: 135 testes.
 
 ## Toolchain validado
 

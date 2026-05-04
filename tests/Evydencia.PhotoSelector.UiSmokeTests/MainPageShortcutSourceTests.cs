@@ -23,6 +23,7 @@ public sealed class MainPageShortcutSourceTests
         StringAssert.Contains(source, "AddViewerKeyboardAccelerator(VirtualKey.Subtract)");
         StringAssert.Contains(source, "AddViewerKeyboardAccelerator(MainKeyboardMinusKey)");
         StringAssert.Contains(source, "AddViewerKeyboardAccelerator(VirtualKey.Number0)");
+        StringAssert.Contains(source, "AddViewerKeyboardAccelerator(VirtualKey.Number1)");
     }
 
     [TestMethod]
@@ -86,7 +87,7 @@ public sealed class MainPageShortcutSourceTests
         StringAssert.Contains(source, "DoubleTappedRoutedEventArgs");
         StringAssert.Contains(source, "TryResetViewerZoomFromPointerDoubleClick");
         StringAssert.Contains(source, "ViewerPointerDoubleClickThreshold");
-        StringAssert.Contains(source, "ResetViewerZoom(showStatus: true)");
+        StringAssert.Contains(source, "ResetViewerToFitAsync(app, showStatus: true)");
         StringAssert.Contains(source, "Ajustado a tela");
     }
 
@@ -102,6 +103,18 @@ public sealed class MainPageShortcutSourceTests
         StringAssert.Contains(source, "OnViewerOverlayHideTimerTick");
         StringAssert.Contains(source, "ShowViewerOverlay");
         StringAssert.Contains(source, "ViewerOverlay.Visibility = Visibility.Collapsed");
+    }
+
+    [TestMethod]
+    public void MainPageSupportsActualSizeZoomShortcut()
+    {
+        var source = File.ReadAllText(GetMainPageSourcePath());
+
+        StringAssert.Contains(source, "VirtualKey.Number1");
+        StringAssert.Contains(source, "LoadActualSizePhotoAsync");
+        StringAssert.Contains(source, "DecodeActualSizeAsync");
+        StringAssert.Contains(source, "CalculateActualSizeBaseZoomFactor");
+        StringAssert.Contains(source, "Zoom 100%");
     }
 
     private static string GetMainPageSourcePath()
