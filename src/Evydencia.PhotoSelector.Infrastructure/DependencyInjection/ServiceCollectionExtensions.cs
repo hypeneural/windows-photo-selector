@@ -21,6 +21,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<FolderLaunchArgumentsParser>();
 
         services.AddTransient<IFolderScanner, FileSystemFolderScanner>();
+        services.AddTransient<IFileMoveService, FileMoveService>();
         services.AddTransient<OpenFolderFromArgumentsUseCase>();
         services.AddTransient<OpenSessionUseCase>();
         services.AddTransient<NavigateNextPhotoUseCase>();

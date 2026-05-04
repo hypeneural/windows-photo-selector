@@ -22,7 +22,7 @@ Ultima atualizacao: 2026-05-03
 - [x] F0-04 - Prototipar fullscreen WinUI 3.
 - [x] F0-05 - Prototipar decode JPEG dimensionado.
 - [x] F0-06 - Validar EXIF orientation.
-- [ ] F0-07 - Validar move para `_deletadas_evydencia`.
+- [x] F0-07 - Validar move para `_deletadas_evydencia`.
 - [ ] F0-08 - Investigar Lixeira com undo.
 - [ ] F0-09 - Validar File Explorer context menu moderno.
 - [ ] F0-10 - Definir metas de performance reais.
@@ -58,12 +58,27 @@ Ultima atualizacao: 2026-05-03
 - [x] F2-04 - Navegacao visual por setas.
 - [x] F2-05 - Fullscreen limpo inicial.
 
+## Fase 3 - Delete e undo robusto
+
+- [ ] F3-01 - Criar `DeleteMode` e settings base.
+- [x] F3-02 - Implementar `FileMoveService` para move/restore local seguro.
+- [ ] F3-03 - Implementar `DeleteManager` de dominio com `PendingDelete`, `Deleted` e `DeleteFailed`.
+- [ ] F3-04 - Implementar `DeleteCurrentPhotoUseCase`.
+- [ ] F3-05 - Implementar `UndoManager` de dominio.
+- [ ] F3-06 - Implementar `UndoLastDeleteUseCase`.
+- [ ] F3-07 - Implementar `JsonlSessionJournalStore`.
+- [ ] F3-08 - Implementar replay basico de journal.
+- [ ] F3-09 - Tratar arquivo bloqueado no fluxo de delete.
+- [ ] F3-10 - Tratar arquivo ausente no fluxo de delete.
+- [ ] F3-11 - Atualizar contadores em todas as transicoes.
+
 ## Bloqueios atuais
 
 - `ShellExtension` ainda nao tem projeto C++/WinRT. A decisao continua adiada para a fase de menu de contexto.
 - Single-instance ainda nao foi implementado; deve vir antes do menu de contexto do Explorer.
 - Conversao do resultado de decode para `ImageSource`/viewer WinUI ja existe para a primeira foto, com navegacao visual inicial por `Right`, `Left` e `Space`.
 - Fullscreen inicial ja usa `AppWindow`/`FullScreenPresenter`, `F` alterna, `Esc` sai, e o decode recaptura `DisplayContext` com estado fullscreen.
+- `FileMoveService` ja move para `_deletadas_evydencia`, restaura, resolve colisao e preserva `LastWriteTimeUtc`; ainda falta ligar isso a `DeleteManager`, journal e atalhos `Delete`/`Ctrl+Z`.
 - `WindowsDisplayContextService` captura `XamlRoot`, area util, escala de rasterizacao e estado fullscreen. Identificacao detalhada de monitor/display area fica para a fatia de segunda tela.
 
 ## Ultima validacao
@@ -108,6 +123,11 @@ Ultima atualizacao: 2026-05-03
 - [x] `tools/format.ps1` executado com sucesso apos 0017.
 - [x] `tools/build.ps1` executado com sucesso apos 0017: 0 warnings.
 - [x] `tools/test.ps1` executado com sucesso apos 0017: 64 testes.
+- [x] Fatia 0018 implementou a fundacao de move/restore para Delete/Undo.
+- [x] `tools/test.ps1 -Filter "FullyQualifiedName~Storage|FullyQualifiedName~Integration"` executado com sucesso apos 0018: Storage 10 testes, Integration 2 testes.
+- [x] `tools/format.ps1` executado com sucesso apos 0018.
+- [x] `tools/build.ps1` executado com sucesso apos 0018: 0 warnings.
+- [x] `tools/test.ps1` executado com sucesso apos 0018: 71 testes.
 
 ## Ultima fatia concluida
 
@@ -128,16 +148,17 @@ Ultima atualizacao: 2026-05-03
 - 0015 - Primeira foto no viewer WinUI usando `ImageDecodeResult` convertido para `SoftwareBitmapSource`.
 - 0016 - Navegacao visual por setas/espaco no viewer WinUI com cancelamento de decode anterior.
 - 0017 - Fullscreen limpo inicial com `F`, `Esc` e recaptura de `DisplayContext`.
+- 0018 - Fundacao de move/restore para `_deletadas_evydencia` com colisao, timestamp e read-only.
 
 ## Cobertura atual de testes
 
 - `Core.Tests`: 22 testes.
 - `Application.Tests`: 17 testes.
 - `Imaging.Tests`: 15 testes.
-- `Storage.Tests`: 3 testes.
+- `Storage.Tests`: 10 testes.
 - `IntegrationTests`: 2 testes.
 - `UiSmokeTests`: 5 testes.
-- Total atual: 64 testes.
+- Total atual: 71 testes.
 
 ## Toolchain validado
 

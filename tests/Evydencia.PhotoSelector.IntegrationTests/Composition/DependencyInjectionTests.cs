@@ -19,6 +19,7 @@ public sealed class DependencyInjectionTests
         Assert.IsInstanceOfType<NavigateNextPhotoUseCase>(provider.GetService(typeof(NavigateNextPhotoUseCase)));
         Assert.IsInstanceOfType<NavigatePreviousPhotoUseCase>(provider.GetService(typeof(NavigatePreviousPhotoUseCase)));
         Assert.IsInstanceOfType<FileSystemFolderScanner>(provider.GetService(typeof(IFolderScanner)));
+        Assert.IsInstanceOfType<FileMoveService>(provider.GetService(typeof(IFileMoveService)));
         Assert.IsInstanceOfType<DecodeTargetCalculator>(provider.GetService(typeof(DecodeTargetCalculator)));
         Assert.IsInstanceOfType<FolderLaunchArgumentsParser>(provider.GetService(typeof(FolderLaunchArgumentsParser)));
         Assert.IsInstanceOfType<OpenFolderFromArgumentsUseCase>(provider.GetService(typeof(OpenFolderFromArgumentsUseCase)));

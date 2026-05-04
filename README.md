@@ -131,11 +131,15 @@ Estado ja validado:
 - primeira foto exibida no viewer WinUI via `SoftwareBitmapSource`.
 - navegacao visual inicial por `Right`, `Left` e `Space`.
 - fullscreen limpo inicial com `F` e `Esc`.
+- move/restore local para `_deletadas_evydencia` com colisao segura.
 
 Proximas fatias planejadas:
 
+- `DeleteManager` e `DeleteCurrentPhotoUseCase`;
+- `UndoManager` e `UndoLastDeleteUseCase`;
+- journal JSONL para delete/restore;
 - single-instance antes do menu de contexto do Explorer;
-- delete/undo robusto.
+- atalhos `Delete` e `Ctrl+Z` no viewer.
 
 ## Documentacao principal
 
