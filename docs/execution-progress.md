@@ -60,6 +60,7 @@ Ultima atualizacao: 2026-05-04
 - [x] F2-04 - Navegacao visual por setas.
 - [x] F2-05 - Fullscreen limpo inicial.
 - [x] F2-06 - Corrigir atalhos do viewer para nao dependerem de foco no `ViewerHost`.
+- [x] F2-07 - Esconder tooltip de aceleradores e adicionar zoom por roda do mouse.
 
 ## Fase 3 - Delete e undo robusto
 
@@ -84,9 +85,11 @@ Ultima atualizacao: 2026-05-04
 - Empacotamento dev assinado ja tem scripts para gerar MSIX, confiar certificado em ambiente elevado, instalar/reinstalar e rodar smoke single-instance instalado.
 - Conversao do resultado de decode para `ImageSource`/viewer WinUI ja existe para a primeira foto, com navegacao visual por `Right`, `Left`, `Space`, `Home` e `End`; atalhos do viewer agora usam `KeyboardAccelerator` na pagina e `KeyDown` fica como fallback do `ViewerHost`.
 - Fullscreen inicial ja usa `AppWindow`/`FullScreenPresenter`, `F` alterna, `Esc` sai, e o decode recaptura `DisplayContext` com estado fullscreen.
+- Zoom inicial por roda do mouse ja existe como zoom optico sobre o preview atual; pan refinado, reset por duplo clique, `+`/`-`/`0`/`1` e re-decode full-res para zoom 100% ainda ficam pendentes para UX/performance posterior.
 - `FileMoveService` ja move para `_deletadas_evydencia`, restaura, resolve colisao e preserva `LastWriteTimeUtc`; ja esta ligado ao `DeleteCurrentPhotoUseCase`.
 - `DeleteManager`, `DeleteCurrentPhotoUseCase`, `UndoManager` e `UndoLastDeleteUseCase` ja validam `PendingDelete`, `Deleted`, `PendingRestore`, `Restored`, `Missing`, `DeleteFailed`, contadores e navegacao; `JsonlSessionJournalStore` ja registra delete/restore em JSONL; `ReplaySessionJournalUseCase` ja faz replay basico e reconciliacao inicial; os atalhos `Delete` e `Ctrl+Z` ja chamam os use cases reais no viewer.
 - Overlay temporizado, retry visual de falha e fila de comandos para deletes muito rapidos ainda ficam para UX/performance posterior.
+- Cache/prefetch LRU, thumbnail/filmstrip, configuracoes, ultimas sessoes, shell extension moderno `IExplorerCommand`, smoke MSIX empacotado e segunda tela seguem pendentes.
 - `WindowsDisplayContextService` captura `XamlRoot`, area util, escala de rasterizacao e estado fullscreen. Identificacao detalhada de monitor/display area fica para a fatia de segunda tela.
 
 ## Ultima validacao
@@ -214,6 +217,12 @@ Ultima atualizacao: 2026-05-04
 - [x] `tools/format.ps1` executado com sucesso apos 0030.
 - [x] `tools/build.ps1` executado com sucesso apos 0030: 0 warnings.
 - [x] `tools/test.ps1` executado com sucesso apos 0030: 126 testes.
+- [x] Fatia 0031 removeu o tooltip fixo de acelerador com `KeyboardAcceleratorPlacementMode="Hidden"` e adicionou zoom por roda do mouse com `PointerWheelChanged` + `ScaleTransform`.
+- [x] Smoke manual automatizado validou ausencia de tooltip `Direita` apos `Right` e `Zoom 120%` apos wheel up na pasta real.
+- [x] `tools/test.ps1 -Filter "FullyQualifiedName~UiSmoke"` executado com sucesso apos 0031: UiSmoke 14 testes.
+- [x] `tools/format.ps1` executado com sucesso apos 0031.
+- [x] `tools/build.ps1` executado com sucesso apos 0031: 0 warnings.
+- [x] `tools/test.ps1` executado com sucesso apos 0031: 128 testes.
 
 ## Ultima fatia concluida
 
@@ -247,6 +256,7 @@ Ultima atualizacao: 2026-05-04
 - 0028 - Diagnostico de pre-requisitos MSIX dev e ajuste do trust de certificado para `LocalMachine\TrustedPeople`.
 - 0029 - Preview unpackaged do viewer com pasta real e investigacao do launch empacotado por alias MSIX.
 - 0030 - Atalhos do viewer corrigidos com `KeyboardAccelerator` de pagina, fallback `KeyDown`, `Home`/`End` e smoke manual automatizado de navegacao/delete/undo.
+- 0031 - Tooltip fixo de acelerador ocultado e zoom por roda do mouse implementado no viewer.
 
 ## Cobertura atual de testes
 
@@ -256,8 +266,8 @@ Ultima atualizacao: 2026-05-04
 - `Storage.Tests`: 16 testes.
 - `IntegrationTests`: 7 testes.
 - `Launcher.Tests`: 7 testes.
-- `UiSmokeTests`: 12 testes.
-- Total atual: 126 testes.
+- `UiSmokeTests`: 14 testes.
+- Total atual: 128 testes.
 
 ## Toolchain validado
 

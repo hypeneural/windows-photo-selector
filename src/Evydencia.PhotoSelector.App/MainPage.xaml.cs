@@ -24,10 +24,15 @@ namespace Evydencia.PhotoSelector.App;
 /// </summary>
 public sealed partial class MainPage : Page, IDisposable
 {
+    private const double ViewerZoomMax = 6.0;
+    private const double ViewerZoomMin = 1.0;
+    private const double ViewerZoomStep = 1.2;
+
     private PhotoSession? _currentSession;
     private bool _fileCommandInProgress;
     private bool _folderActivationInProgress;
     private CancellationTokenSource? _imageLoadCancellation;
+    private double _viewerZoomFactor = ViewerZoomMin;
 
     public MainPage()
     {
@@ -83,6 +88,26 @@ public sealed partial class MainPage : Page, IDisposable
 
         e.Handled = true;
         await HandleViewerShortcutSafelyAsync(e.Key, isControlDown);
+    }
+
+    private void OnViewerPointerWheelChanged(object sender, PointerRoutedEventArgs e)
+    {
+        if (!ViewModel.IsViewerVisible || ViewModel.CurrentPhoto is null)
+        {
+            return;
+        }
+
+        var pointerPoint = e.GetCurrentPoint(ViewerHost);
+        var delta = pointerPoint.Properties.MouseWheelDelta;
+        if (delta == 0)
+        {
+            return;
+        }
+
+        e.Handled = true;
+        var scale = delta > 0 ? ViewerZoomStep : 1 / ViewerZoomStep;
+        ApplyViewerZoom(_viewerZoomFactor * scale, showStatus: true);
+        ViewerHost.Focus(FocusState.Programmatic);
     }
 
     private void RegisterViewerKeyboardAccelerators()
@@ -364,6 +389,7 @@ public sealed partial class MainPage : Page, IDisposable
 
             if (result.CurrentPhoto is not null)
             {
+                ResetViewerZoom();
                 await LoadCurrentPhotoAsync(app);
             }
         }
@@ -413,6 +439,7 @@ public sealed partial class MainPage : Page, IDisposable
             }
 
             _imageLoadCancellation?.Cancel();
+            ResetViewerZoom();
             CurrentPhotoImage.Source = null;
             var result = await ViewModel.LoadInitialSessionAsync(
                 Task.Run(() => app.OpenSessionFromRawArgumentsAsync(e.RawArguments)));
@@ -463,6 +490,7 @@ public sealed partial class MainPage : Page, IDisposable
             _currentSession.CurrentIndex,
             _currentSession.ActiveCount);
         ViewModel.SetViewerStatus(statusText);
+        ResetViewerZoom();
         CurrentPhotoImage.Source = null;
         SyncVisualState();
         ViewerHost.Focus(FocusState.Programmatic);
@@ -471,6 +499,7 @@ public sealed partial class MainPage : Page, IDisposable
     private async Task NavigateToAsync(App app, NavigationResult navigationResult)
     {
         ViewModel.ApplyNavigation(navigationResult);
+        ResetViewerZoom();
         CurrentPhotoImage.Source = null;
         SyncVisualState();
         ViewerHost.Focus(FocusState.Programmatic);
@@ -525,6 +554,28 @@ public sealed partial class MainPage : Page, IDisposable
     {
         var state = InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Control);
         return (state & CoreVirtualKeyStates.Down) == CoreVirtualKeyStates.Down;
+    }
+
+    private void ApplyViewerZoom(double zoomFactor, bool showStatus)
+    {
+        _viewerZoomFactor = Math.Clamp(zoomFactor, ViewerZoomMin, ViewerZoomMax);
+        CurrentPhotoScaleTransform.ScaleX = _viewerZoomFactor;
+        CurrentPhotoScaleTransform.ScaleY = _viewerZoomFactor;
+
+        if (!showStatus)
+        {
+            return;
+        }
+
+        ViewModel.SetViewerStatus(_viewerZoomFactor <= ViewerZoomMin + 0.01
+            ? string.Empty
+            : $"Zoom {Math.Round(_viewerZoomFactor * 100)}%");
+        SyncVisualState();
+    }
+
+    private void ResetViewerZoom()
+    {
+        ApplyViewerZoom(ViewerZoomMin, showStatus: false);
     }
 
     private async Task LoadCurrentPhotoAsync(App app)

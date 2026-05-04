@@ -31,6 +31,27 @@ public sealed class MainPageShortcutSourceTests
         StringAssert.Contains(source, "HandleViewerShortcutSafelyAsync(sender.Key, isControlDown)");
     }
 
+    [TestMethod]
+    public void MainPageHidesKeyboardAcceleratorTooltips()
+    {
+        var xaml = File.ReadAllText(GetMainPageXamlPath());
+
+        StringAssert.Contains(xaml, "KeyboardAcceleratorPlacementMode=\"Hidden\"");
+    }
+
+    [TestMethod]
+    public void MainPageSupportsMouseWheelZoom()
+    {
+        var source = File.ReadAllText(GetMainPageSourcePath());
+        var xaml = File.ReadAllText(GetMainPageXamlPath());
+
+        StringAssert.Contains(xaml, "PointerWheelChanged=\"OnViewerPointerWheelChanged\"");
+        StringAssert.Contains(xaml, "ScaleTransform x:Name=\"CurrentPhotoScaleTransform\"");
+        StringAssert.Contains(source, "MouseWheelDelta");
+        StringAssert.Contains(source, "ApplyViewerZoom");
+        StringAssert.Contains(source, "ResetViewerZoom");
+    }
+
     private static string GetMainPageSourcePath()
     {
         return GetAppFilePath("MainPage.xaml.cs");
