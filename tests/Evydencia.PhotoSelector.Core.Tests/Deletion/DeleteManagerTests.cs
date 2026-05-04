@@ -72,6 +72,23 @@ public sealed class DeleteManagerTests
     }
 
     [TestMethod]
+    public void MarkMissingMarksPhotoMissingAndPreservesPreferredCurrentPhoto()
+    {
+        var session = SessionWithThreePhotos();
+        var manager = new DeleteManager();
+        var request = manager.RequestDeleteCurrent(session);
+
+        var completion = manager.MarkMissing(session, request.DeletedPhoto!, request.CurrentPhoto?.Id);
+
+        Assert.AreEqual(DeleteCompletionStatus.Missing, completion.Status);
+        Assert.AreEqual(PhotoStatus.Missing, completion.DeletedPhoto.Status);
+        Assert.AreEqual("IMG_0002.jpg", completion.CurrentPhoto?.FileName);
+        Assert.AreEqual(2, completion.ActiveCount);
+        Assert.AreEqual(0, completion.DeletedCount);
+        Assert.AreEqual(0, completion.CurrentIndex);
+    }
+
+    [TestMethod]
     public void RequestDeleteCurrentWhenNoActivePhotoReturnsNoCurrentPhoto()
     {
         var session = new PhotoSession(

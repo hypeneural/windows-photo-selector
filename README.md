@@ -136,10 +136,11 @@ Estado ja validado:
 - undo sem UI com `PendingRestore`, `Restored`, pilha por sessao, contadores e restore real validados.
 - journal JSONL append-only para delete/restore.
 - replay basico de journal e reconciliacao inicial com filesystem como fonte da verdade.
+- delete de arquivo bloqueado/ausente tratado sem corromper contadores: `FileLocked`/`DeleteFailed` e `Missing`.
 
 Proximas fatias planejadas:
 
-- ligar `Delete` e `Ctrl+Z` no viewer ou tratar arquivos bloqueados/ausentes no fluxo operacional;
+- ligar `Delete` e `Ctrl+Z` no viewer;
 - single-instance antes do menu de contexto do Explorer;
 
 ## Documentacao principal

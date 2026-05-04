@@ -7,6 +7,9 @@ namespace Evydencia.PhotoSelector.Storage.Filesystem;
 
 public sealed class FileMoveService : IFileMoveService
 {
+    private const int ErrorSharingViolation = 32;
+    private const int ErrorLockViolation = 33;
+
     public Task<FileMoveResult> MoveToDeletedFolderAsync(
         string sourcePath,
         string sessionFolderPath,
@@ -156,13 +159,22 @@ public sealed class FileMoveService : IFileMoveService
         return exception switch
         {
             FileNotFoundException => FileMoveErrorCode.SourceMissing,
+            IOException ioException when IsFileLocked(ioException) => FileMoveErrorCode.FileLocked,
             UnauthorizedAccessException => FileMoveErrorCode.AccessDenied,
             PathTooLongException => FileMoveErrorCode.PathTooLong,
+            DirectoryNotFoundException => FileMoveErrorCode.InvalidPath,
+            DriveNotFoundException => FileMoveErrorCode.InvalidPath,
             ArgumentException => FileMoveErrorCode.InvalidPath,
             NotSupportedException => FileMoveErrorCode.InvalidPath,
             IOException => FileMoveErrorCode.IoFailure,
             _ => FileMoveErrorCode.Unknown
         };
+    }
+
+    private static bool IsFileLocked(IOException exception)
+    {
+        var errorCode = exception.HResult & 0x0000FFFF;
+        return errorCode is ErrorSharingViolation or ErrorLockViolation;
     }
 
     private static bool PathsEqual(string left, string right)

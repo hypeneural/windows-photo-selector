@@ -4,5 +4,6 @@ public enum DeleteCurrentPhotoStatus
 {
     NoCurrentPhoto,
     Deleted,
+    Missing,
     DeleteFailed
 }

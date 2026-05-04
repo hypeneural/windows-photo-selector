@@ -72,4 +72,18 @@ public sealed class DeleteCurrentPhotoResult
             currentPhoto,
             fileMoveResult);
     }
+
+    public static DeleteCurrentPhotoResult Missing(
+        PhotoSession session,
+        PhotoItem missingPhoto,
+        PhotoItem? currentPhoto,
+        FileMoveResult fileMoveResult)
+    {
+        return new DeleteCurrentPhotoResult(
+            session,
+            DeleteCurrentPhotoStatus.Missing,
+            missingPhoto,
+            currentPhoto,
+            fileMoveResult);
+    }
 }

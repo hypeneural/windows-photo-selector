@@ -82,6 +82,31 @@ public sealed class DeleteCurrentPhotoUseCaseTests
     }
 
     [TestMethod]
+    public async Task ExecuteAsyncWhenSourceIsMissingMarksPhotoMissingAndPreservesNextPhoto()
+    {
+        var session = SessionFactory.Create("IMG_0001.jpg", "IMG_0002.jpg", "IMG_0003.jpg");
+        var fileMoveService = new FakeFileMoveService(MissingSourceResult(session.Photos[0]));
+        var journalStore = new FakeSessionJournalStore();
+        var undoManager = new UndoManager();
+        var useCase = new DeleteCurrentPhotoUseCase(new DeleteManager(), fileMoveService, undoManager, journalStore);
+
+        var result = await useCase.ExecuteAsync(session);
+
+        Assert.AreEqual(DeleteCurrentPhotoStatus.Missing, result.Status);
+        Assert.AreEqual(PhotoStatus.Missing, result.DeletedPhoto?.Status);
+        Assert.AreEqual("IMG_0002.jpg", result.CurrentPhoto?.FileName);
+        Assert.AreEqual(2, result.ActiveCount);
+        Assert.AreEqual(0, result.DeletedCount);
+        Assert.AreEqual(0, result.CurrentIndex);
+        Assert.AreEqual(FileMoveErrorCode.SourceMissing, result.FileMoveResult?.ErrorCode);
+        Assert.IsFalse(undoManager.CanUndo(session));
+        CollectionAssert.AreEqual(
+            new[] { SessionJournalEventType.DeleteRequested, SessionJournalEventType.DeleteFailed },
+            journalStore.Events.Select(journalEvent => journalEvent.EventType).ToArray());
+        Assert.AreEqual(FileMoveErrorCode.SourceMissing.ToString(), journalStore.Events[^1].ErrorCode);
+    }
+
+    [TestMethod]
     public async Task ExecuteAsyncWhenNoActivePhotoReturnsNoCurrentPhoto()
     {
         var session = new PhotoSession(
@@ -155,5 +180,15 @@ public sealed class DeleteCurrentPhotoUseCaseTests
             deletedPath,
             FileMoveErrorCode.IoFailure,
             "move failed");
+    }
+
+    private static FileMoveResult MissingSourceResult(PhotoItem photo)
+    {
+        var deletedPath = $"C:\\sessao\\_deletadas_evydencia\\{photo.FileName}";
+        return FileMoveResult.Failure(
+            photo.FullPath,
+            deletedPath,
+            FileMoveErrorCode.SourceMissing,
+            "source missing");
     }
 }

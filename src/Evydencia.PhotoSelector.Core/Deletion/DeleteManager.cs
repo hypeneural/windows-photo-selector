@@ -61,6 +61,30 @@ public sealed class DeleteManager
             ResolveCurrentPhoto(session));
     }
 
+    public DeleteCompletionResult MarkMissing(
+        PhotoSession session,
+        PhotoItem missingPhoto,
+        Guid? preferredCurrentPhotoId)
+    {
+        ArgumentNullException.ThrowIfNull(session);
+        ArgumentNullException.ThrowIfNull(missingPhoto);
+
+        EnsurePhotoBelongsToSession(session, missingPhoto);
+        EnsurePendingDelete(missingPhoto);
+
+        missingPhoto.SetStatus(PhotoStatus.Missing);
+        if (preferredCurrentPhotoId.HasValue)
+        {
+            SyncCurrentIndex(session, preferredCurrentPhotoId.Value);
+        }
+
+        return new DeleteCompletionResult(
+            session,
+            DeleteCompletionStatus.Missing,
+            missingPhoto,
+            ResolveCurrentPhoto(session));
+    }
+
     private static void EnsurePhotoBelongsToSession(PhotoSession session, PhotoItem photo)
     {
         if (!session.Photos.Any(item => item.Id == photo.Id))

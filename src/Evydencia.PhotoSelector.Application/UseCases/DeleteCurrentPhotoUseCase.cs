@@ -53,16 +53,30 @@ public sealed class DeleteCurrentPhotoUseCase
                 .MoveToDeletedFolderAsync(request.DeletedPhoto.FullPath, session.FolderPath, cancellationToken)
                 .ConfigureAwait(false);
 
-            return moveResult.IsSuccess
-                ? await CompleteDeleteAsync(session, request.DeletedPhoto, moveResult, cancellationToken)
-                    .ConfigureAwait(false)
-                : await FailDeleteAsync(
+            if (moveResult.IsSuccess)
+            {
+                return await CompleteDeleteAsync(session, request.DeletedPhoto, moveResult, cancellationToken)
+                    .ConfigureAwait(false);
+            }
+
+            if (moveResult.ErrorCode == FileMoveErrorCode.SourceMissing)
+            {
+                return await MarkMissingAsync(
                         session,
                         request.DeletedPhoto,
                         preferredCurrentPhotoId,
                         moveResult,
                         cancellationToken)
                     .ConfigureAwait(false);
+            }
+
+            return await FailDeleteAsync(
+                    session,
+                    request.DeletedPhoto,
+                    preferredCurrentPhotoId,
+                    moveResult,
+                    cancellationToken)
+                .ConfigureAwait(false);
         }
         catch (OperationCanceledException)
         {
@@ -115,6 +129,27 @@ public sealed class DeleteCurrentPhotoUseCase
                 cancellationToken)
             .ConfigureAwait(false);
         return DeleteCurrentPhotoResult.DeleteFailed(
+            session,
+            completion.DeletedPhoto,
+            completion.CurrentPhoto,
+            moveResult);
+    }
+
+    private async Task<DeleteCurrentPhotoResult> MarkMissingAsync(
+        PhotoSession session,
+        PhotoItem missingPhoto,
+        Guid? preferredCurrentPhotoId,
+        FileMoveResult moveResult,
+        CancellationToken cancellationToken)
+    {
+        var completion = _deleteManager.MarkMissing(session, missingPhoto, preferredCurrentPhotoId);
+        await _journalStore
+            .AppendAsync(
+                session,
+                SessionJournalEvent.DeleteFailed(session, completion.DeletedPhoto, moveResult),
+                cancellationToken)
+            .ConfigureAwait(false);
+        return DeleteCurrentPhotoResult.Missing(
             session,
             completion.DeletedPhoto,
             completion.CurrentPhoto,

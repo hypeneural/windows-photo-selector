@@ -4,6 +4,7 @@ public enum FileMoveErrorCode
 {
     None,
     SourceMissing,
+    FileLocked,
     AccessDenied,
     InvalidPath,
     PathTooLong,

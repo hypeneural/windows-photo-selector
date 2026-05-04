@@ -99,6 +99,48 @@ public sealed class FileMoveServiceTests
     }
 
     [TestMethod]
+    public async Task MoveToDeletedFolderAsyncWhenSourceIsLockedReturnsFileLockedFailure()
+    {
+        using var folder = TemporaryFolder.Create();
+        var sourcePath = folder.WriteFile("IMG_0001.jpg", "jpeg");
+        using var lockStream = new FileStream(
+            sourcePath,
+            FileMode.Open,
+            FileAccess.ReadWrite,
+            FileShare.None);
+        var service = new FileMoveService();
+
+        var result = await service.MoveToDeletedFolderAsync(sourcePath, folder.Path);
+
+        Assert.IsFalse(result.IsSuccess);
+        Assert.AreEqual(FileMoveErrorCode.FileLocked, result.ErrorCode);
+        Assert.IsNull(result.ActualDestinationPath);
+        Assert.IsTrue(File.Exists(sourcePath));
+    }
+
+    [TestMethod]
+    public async Task RestoreAsyncWhenDeletedFileIsLockedReturnsFileLockedFailure()
+    {
+        using var folder = TemporaryFolder.Create();
+        var deletedPath = folder.WriteFile($"{FolderScanPolicy.DeletedFolderName}\\IMG_0001.jpg", "jpeg");
+        var originalPath = Path.Combine(folder.Path, "IMG_0001.jpg");
+        using var lockStream = new FileStream(
+            deletedPath,
+            FileMode.Open,
+            FileAccess.ReadWrite,
+            FileShare.None);
+        var service = new FileMoveService();
+
+        var result = await service.RestoreAsync(deletedPath, originalPath);
+
+        Assert.IsFalse(result.IsSuccess);
+        Assert.AreEqual(FileMoveErrorCode.FileLocked, result.ErrorCode);
+        Assert.IsNull(result.ActualDestinationPath);
+        Assert.IsTrue(File.Exists(deletedPath));
+        Assert.IsFalse(File.Exists(originalPath));
+    }
+
+    [TestMethod]
     public async Task MoveAndRestorePreserveLastWriteTimeUtc()
     {
         using var folder = TemporaryFolder.Create();

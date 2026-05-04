@@ -137,6 +137,84 @@ public sealed class DeleteCurrentPhotoUseCaseIntegrationTests
         }
     }
 
+    [TestMethod]
+    public async Task ExecuteAsyncWhenCurrentFileIsLockedMarksDeleteFailedAndKeepsFile()
+    {
+        var folderPath = CreateTemporaryFolder();
+        try
+        {
+            var firstPath = WriteFile(folderPath, "IMG_0001.jpg");
+            WriteFile(folderPath, "IMG_0002.jpg");
+            var session = CreateSession(folderPath, "IMG_0001.jpg", "IMG_0002.jpg");
+            var journalStore = new JsonlSessionJournalStore();
+            using var lockStream = new FileStream(
+                firstPath,
+                FileMode.Open,
+                FileAccess.ReadWrite,
+                FileShare.None);
+            var useCase = new DeleteCurrentPhotoUseCase(
+                new DeleteManager(),
+                new FileMoveService(),
+                new UndoManager(),
+                journalStore);
+
+            var result = await useCase.ExecuteAsync(session);
+
+            Assert.AreEqual(DeleteCurrentPhotoStatus.DeleteFailed, result.Status);
+            Assert.AreEqual(PhotoStatus.DeleteFailed, result.DeletedPhoto?.Status);
+            Assert.AreEqual(FileMoveErrorCode.FileLocked, result.FileMoveResult?.ErrorCode);
+            Assert.AreEqual("IMG_0002.jpg", result.CurrentPhoto?.FileName);
+            Assert.AreEqual(2, result.ActiveCount);
+            Assert.AreEqual(0, result.DeletedCount);
+            Assert.IsTrue(File.Exists(firstPath));
+            var journalLines = await File.ReadAllLinesAsync(journalStore.GetJournalPath(session));
+            Assert.HasCount(2, journalLines);
+            StringAssert.Contains(journalLines[1], SessionJournalEventType.DeleteFailed);
+            StringAssert.Contains(journalLines[1], FileMoveErrorCode.FileLocked.ToString());
+        }
+        finally
+        {
+            DeleteTemporaryFolder(folderPath);
+        }
+    }
+
+    [TestMethod]
+    public async Task ExecuteAsyncWhenCurrentFileIsMissingMarksMissingAndContinues()
+    {
+        var folderPath = CreateTemporaryFolder();
+        try
+        {
+            var firstPath = WriteFile(folderPath, "IMG_0001.jpg");
+            WriteFile(folderPath, "IMG_0002.jpg");
+            var session = CreateSession(folderPath, "IMG_0001.jpg", "IMG_0002.jpg");
+            var journalStore = new JsonlSessionJournalStore();
+            File.Delete(firstPath);
+            var useCase = new DeleteCurrentPhotoUseCase(
+                new DeleteManager(),
+                new FileMoveService(),
+                new UndoManager(),
+                journalStore);
+
+            var result = await useCase.ExecuteAsync(session);
+
+            Assert.AreEqual(DeleteCurrentPhotoStatus.Missing, result.Status);
+            Assert.AreEqual(PhotoStatus.Missing, result.DeletedPhoto?.Status);
+            Assert.AreEqual(FileMoveErrorCode.SourceMissing, result.FileMoveResult?.ErrorCode);
+            Assert.AreEqual("IMG_0002.jpg", result.CurrentPhoto?.FileName);
+            Assert.AreEqual(1, result.ActiveCount);
+            Assert.AreEqual(0, result.DeletedCount);
+            Assert.IsFalse(File.Exists(firstPath));
+            var journalLines = await File.ReadAllLinesAsync(journalStore.GetJournalPath(session));
+            Assert.HasCount(2, journalLines);
+            StringAssert.Contains(journalLines[1], SessionJournalEventType.DeleteFailed);
+            StringAssert.Contains(journalLines[1], FileMoveErrorCode.SourceMissing.ToString());
+        }
+        finally
+        {
+            DeleteTemporaryFolder(folderPath);
+        }
+    }
+
     private static PhotoSession CreateSession(string folderPath, params string[] fileNames)
     {
         var candidates = fileNames.Select((fileName, index) =>
