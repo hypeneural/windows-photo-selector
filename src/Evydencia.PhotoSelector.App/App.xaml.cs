@@ -1,6 +1,9 @@
+using Evydencia.PhotoSelector.App.Activation;
 using Evydencia.PhotoSelector.App.Composition;
 using Evydencia.PhotoSelector.Application.Activation;
 using Evydencia.PhotoSelector.Application.UseCases;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Windows.AppLifecycle;
 using Microsoft.UI.Xaml;
 
 namespace Evydencia.PhotoSelector.App;
@@ -11,6 +14,8 @@ namespace Evydencia.PhotoSelector.App;
 public partial class App : Microsoft.UI.Xaml.Application
 {
     private Window? _window;
+
+    internal event EventHandler<FolderActivationRequestedEventArgs>? FolderActivationRequested;
 
     public IServiceProvider Services { get; }
 
@@ -39,25 +44,56 @@ public partial class App : Microsoft.UI.Xaml.Application
     {
         _ = args;
 
-        var commandLineArguments = Environment.GetCommandLineArgs().Skip(1).ToArray();
-        InitialSessionOpenTask = Task.Run(() => OpenInitialSessionAsync(commandLineArguments));
+        AppInstanceCoordinator.MainInstance.Activated += OnAppInstanceActivated;
+        InitialSessionOpenTask = Task.Run(OpenInitialSessionAsync);
 
         _window = new MainWindow();
         _window.Activate();
     }
 
-    private async Task<OpenFolderFromArgumentsResult> OpenInitialSessionAsync(string[] commandLineArguments)
+    public async Task<OpenFolderFromArgumentsResult> OpenSessionFromRawArgumentsAsync(string rawArguments)
     {
-        var useCase = (OpenFolderFromArgumentsUseCase?)Services.GetService(typeof(OpenFolderFromArgumentsUseCase));
-        if (useCase is null)
+        var useCase = Services.GetRequiredService<OpenFolderFromArgumentsUseCase>();
+        var result = await useCase.ExecuteRawAsync(rawArguments).ConfigureAwait(false);
+        StoreOpenResult(result);
+        return result;
+    }
+
+    public async Task<OpenFolderFromArgumentsResult> OpenSessionFromArgumentsAsync(IReadOnlyList<string> commandLineArguments)
+    {
+        var useCase = Services.GetRequiredService<OpenFolderFromArgumentsUseCase>();
+        var result = await useCase.ExecuteAsync(commandLineArguments).ConfigureAwait(false);
+        StoreOpenResult(result);
+        return result;
+    }
+
+    private Task<OpenFolderFromArgumentsResult> OpenInitialSessionAsync()
+    {
+        var activationArguments = AppInstance.GetCurrent().GetActivatedEventArgs();
+        var rawArguments = LaunchActivationArgumentsReader.ReadRawArguments(activationArguments);
+        return string.IsNullOrWhiteSpace(rawArguments)
+            ? OpenSessionFromArgumentsAsync(Environment.GetCommandLineArgs().Skip(1).ToArray())
+            : OpenSessionFromRawArgumentsAsync(rawArguments);
+    }
+
+    private void OnAppInstanceActivated(object? sender, AppActivationArguments args)
+    {
+        var rawArguments = LaunchActivationArgumentsReader.ReadRawArguments(args);
+        if (string.IsNullOrWhiteSpace(rawArguments) || _window is null)
         {
-            InitialSessionOpenResult = OpenFolderFromArgumentsResult.NoFolderArgument(FolderLaunchArguments.Empty);
-            return InitialSessionOpenResult;
+            return;
         }
 
-        var result = await useCase.ExecuteAsync(commandLineArguments).ConfigureAwait(false);
+        _window.DispatcherQueue.TryEnqueue(() =>
+        {
+            _window.Activate();
+            FolderActivationRequested?.Invoke(this, new FolderActivationRequestedEventArgs(rawArguments));
+        });
+    }
+
+    private void StoreOpenResult(OpenFolderFromArgumentsResult result)
+    {
         LaunchArguments = result.LaunchArguments;
         InitialSessionOpenResult = result;
-        return result;
     }
 }

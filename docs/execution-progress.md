@@ -27,7 +27,8 @@ Ultima atualizacao: 2026-05-04
 - [ ] F0-09 - Validar File Explorer context menu moderno.
 - [ ] F0-10 - Definir metas de performance reais.
 - [x] F0-11 - Validar .NET 10 + Windows App SDK 2.0.1.
-- [ ] F0-12 - Validar single-instance com ativacao por pasta.
+- [x] F0-12 - Implementar single-instance inicial com ativacao por pasta.
+- [ ] F0-19 - Validar single-instance em app registrado/empacotado com duas ativacoes reais.
 - [x] F0-13 - Validar decode sem prender file handle.
 - [x] F0-14 - Criar `DisplayContext`.
 - [ ] F0-15 - Validar preview cache sem perda visual.
@@ -76,7 +77,7 @@ Ultima atualizacao: 2026-05-04
 ## Bloqueios atuais
 
 - `ShellExtension` ainda nao tem projeto C++/WinRT. A decisao continua adiada para a fase de menu de contexto.
-- Single-instance ainda nao foi implementado; deve vir antes do menu de contexto do Explorer.
+- Single-instance inicial ja usa `AppInstance.FindOrRegisterForKey` e `RedirectActivationToAsync` antes da criacao da janela. A validacao com app registrado/empacotado ainda precisa acontecer antes do menu de contexto do Explorer.
 - Conversao do resultado de decode para `ImageSource`/viewer WinUI ja existe para a primeira foto, com navegacao visual inicial por `Right`, `Left` e `Space`.
 - Fullscreen inicial ja usa `AppWindow`/`FullScreenPresenter`, `F` alterna, `Esc` sai, e o decode recaptura `DisplayContext` com estado fullscreen.
 - `FileMoveService` ja move para `_deletadas_evydencia`, restaura, resolve colisao e preserva `LastWriteTimeUtc`; ja esta ligado ao `DeleteCurrentPhotoUseCase`.
@@ -161,6 +162,12 @@ Ultima atualizacao: 2026-05-04
 - [x] `tools/format.ps1` executado com sucesso apos 0024.
 - [x] `tools/build.ps1` executado com sucesso apos 0024: 0 warnings.
 - [x] `tools/test.ps1` executado com sucesso apos 0024: 114 testes.
+- [x] Fatia 0025 implementou single-instance inicial com `Program.cs` customizado, `DISABLE_XAML_GENERATED_MAIN`, `AppInstanceCoordinator` e reativacao por argumentos `Launch`.
+- [x] `tools/test.ps1 -Filter "FullyQualifiedName~OpenFolderFromArgumentsUseCase"` executado com sucesso apos 0025: Application 4 testes.
+- [x] `tools/format.ps1` executado com sucesso apos 0025.
+- [x] `tools/build.ps1` executado com sucesso apos 0025: 0 warnings.
+- [x] `tools/test.ps1` executado com sucesso apos 0025: 115 testes.
+- [ ] Smoke real por executavel direto ficou inconclusivo: o processo encerrou com `0xE0434352`/`REGDB_E_CLASSNOTREG`, porque o Windows App Runtime 2.0 ainda nao esta registrado no ambiente; o `winget` lista runtime ate 1.8.
 
 ## Ultima fatia concluida
 
@@ -188,16 +195,17 @@ Ultima atualizacao: 2026-05-04
 - 0022 - Replay basico de journal com `ReplaySessionJournalUseCase`, leitura JSONL, reconciliacao por filesystem e recuperacao de fotos deletadas nao escaneadas.
 - 0023 - Tratamento de arquivo bloqueado/ausente no delete, com `FileLocked`, `Missing`, contadores consistentes e journal `DeleteFailed`.
 - 0024 - Atalhos `Delete` e `Ctrl+Z` ligados ao viewer WinUI, chamando os use cases reais e preservando contadores/estado visual.
+- 0025 - Single-instance inicial com redirecionamento antes da janela e reativacao por pasta na instancia principal.
 
 ## Cobertura atual de testes
 
 - `Core.Tests`: 33 testes.
-- `Application.Tests`: 33 testes.
+- `Application.Tests`: 34 testes.
 - `Imaging.Tests`: 15 testes.
 - `Storage.Tests`: 16 testes.
 - `IntegrationTests`: 7 testes.
 - `UiSmokeTests`: 10 testes.
-- Total atual: 114 testes.
+- Total atual: 115 testes.
 
 ## Toolchain validado
 

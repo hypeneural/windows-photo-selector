@@ -21,6 +21,21 @@ public sealed class OpenFolderFromArgumentsUseCase
         CancellationToken cancellationToken = default)
     {
         var launchArguments = _argumentsParser.Parse(arguments);
+        return await ExecuteAsync(launchArguments, cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<OpenFolderFromArgumentsResult> ExecuteRawAsync(
+        string? rawArguments,
+        CancellationToken cancellationToken = default)
+    {
+        var launchArguments = _argumentsParser.ParseRaw(rawArguments);
+        return await ExecuteAsync(launchArguments, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<OpenFolderFromArgumentsResult> ExecuteAsync(
+        FolderLaunchArguments launchArguments,
+        CancellationToken cancellationToken)
+    {
         if (!launchArguments.HasFolder)
         {
             return OpenFolderFromArgumentsResult.NoFolderArgument(launchArguments);

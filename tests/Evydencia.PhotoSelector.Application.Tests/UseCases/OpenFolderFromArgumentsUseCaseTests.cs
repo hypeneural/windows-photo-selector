@@ -42,6 +42,20 @@ public sealed class OpenFolderFromArgumentsUseCaseTests
     }
 
     [TestMethod]
+    public async Task ExecuteRawAsyncWithQuotedFolderOpensSession()
+    {
+        var scanner = new FakeFolderScanner([Candidate("IMG_0001.jpg")]);
+        var useCase = CreateUseCase(scanner);
+
+        var result = await useCase.ExecuteRawAsync("--folder \"C:\\Sessao Cliente\" --source explorer");
+
+        Assert.AreEqual(OpenFolderFromArgumentsStatus.Opened, result.Status);
+        Assert.AreEqual("C:\\Sessao Cliente", scanner.LastRequest?.FolderPath);
+        Assert.AreEqual("explorer", result.LaunchArguments.Source);
+        Assert.AreEqual(1, scanner.ScanCount);
+    }
+
+    [TestMethod]
     public async Task ExecuteAsyncWhenScannerFailsReturnsFailureResult()
     {
         var scanner = new FakeFolderScanner(

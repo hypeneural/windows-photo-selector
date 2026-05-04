@@ -756,7 +756,9 @@ Atualizacao de execucao:
 - A fatia 0022 implementou replay basico de journal/reconciliacao inicial com `ReplaySessionJournalUseCase`, leitura JSONL por `ReadEventsAsync`, filesystem vencendo divergencia e recuperacao de foto deletada nao escaneada na pasta original.
 - A fatia 0023 fechou F3-09/F3-10 com `FileLocked` para arquivo bloqueado, `Missing` para origem ausente, contadores consistentes e eventos `DeleteFailed` no journal.
 - A fatia 0024 ligou `Delete` e `Ctrl+Z` no viewer WinUI, chamando os use cases reais, atualizando foto/contadores e evitando comando de arquivo concorrente nesta primeira ligacao.
-- A proxima prioridade e polir overlay/retry visual ou implementar single-instance, mantendo single-instance como bloqueio antes do menu de contexto do Explorer.
+- A fatia 0025 implementou single-instance inicial com `Program.cs` customizado, `DISABLE_XAML_GENERATED_MAIN`, `AppInstance.FindOrRegisterForKey`, `RedirectActivationToAsync` e reativacao por argumentos `Launch` na instancia principal.
+- O smoke por executavel direto ainda ficou inconclusivo porque o ambiente tem Windows App Runtime ate 1.8 registrado, mas nao 2.0; a validacao real deve ser repetida com app registrado/empacotado antes do menu de contexto do Explorer.
+- A proxima prioridade e polir overlay/retry visual ou validar runtime/empacotamento para liberar o menu de contexto do Explorer.
 - Se os benchmarks com JPEGs reais de estudio mostrarem que scan + ordenacao comprometem o alvo de tempo ate primeira imagem, criar uma fatia especifica para `ProgressiveOpenSessionUseCase` ou `SessionOpenHandle`, documentando a diferenca entre "primeira foto por ordem final" e "primeira previsualizacao disponivel".
 
 ### 8.4 Single-instance e reativação por pasta
@@ -1956,7 +1958,8 @@ Critério de saída:
 | F0-09 | Validar File Explorer context menu moderno | Prova técnica ou decisão documentada sobre MSIX/IExplorerCommand |
 | F0-10 | Definir metas de performance reais | Documento com baseline usando JPEGs do estúdio |
 | F0-11 | Validar .NET 10 + Windows App SDK 2.0.1 | Projeto WinUI compila, empacota e roda; se falhar, registrar motivo e fallback |
-| F0-12 | Validar single-instance com ativação por pasta | Clicar duas vezes no menu de contexto não abre duas instâncias |
+| F0-12 | Implementar single-instance inicial com ativação por pasta | Redirecionamento acontece antes de criar janela; feito na fatia 0025 |
+| F0-19 | Validar single-instance com app registrado/empacotado | Clicar duas vezes no menu de contexto não abre duas instâncias; pendente de runtime/packaging |
 | F0-13 | Validar decode sem prender file handle | Foto exibida pode ser movida para `_deletadas_evydencia` sem `IOException` causada pelo app |
 | F0-14 | Criar `DisplayContext` | App calcula resolução física, DPI, área útil, rasterization scale e monitor atual |
 | F0-15 | Validar preview cache sem perda visual | Comparar original vs preview em tela 4K e decidir qualidade/formato |

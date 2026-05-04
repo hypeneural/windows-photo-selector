@@ -1,3 +1,4 @@
+using Evydencia.PhotoSelector.App.Activation;
 using Evydencia.PhotoSelector.App.Display;
 using Evydencia.PhotoSelector.App.Imaging;
 using Evydencia.PhotoSelector.App.Windowing;
@@ -25,6 +26,7 @@ public sealed partial class MainPage : Page, IDisposable
 {
     private PhotoSession? _currentSession;
     private bool _fileCommandInProgress;
+    private bool _folderActivationInProgress;
     private CancellationTokenSource? _imageLoadCancellation;
 
     public MainPage()
@@ -50,6 +52,7 @@ public sealed partial class MainPage : Page, IDisposable
 
         if (Microsoft.UI.Xaml.Application.Current is App app)
         {
+            app.FolderActivationRequested += OnFolderActivationRequested;
             var result = await ViewModel.LoadInitialSessionAsync(app.InitialSessionOpenTask);
             SyncVisualState();
             if (result?.Status == OpenFolderFromArgumentsStatus.Opened)
@@ -58,6 +61,14 @@ public sealed partial class MainPage : Page, IDisposable
                 ViewerHost.Focus(FocusState.Programmatic);
                 await LoadCurrentPhotoAsync(app);
             }
+        }
+    }
+
+    private async void OnFolderActivationRequested(object? sender, FolderActivationRequestedEventArgs e)
+    {
+        if (Microsoft.UI.Xaml.Application.Current is App app)
+        {
+            await OpenRequestedFolderAsync(app, e);
         }
     }
 
@@ -240,6 +251,72 @@ public sealed partial class MainPage : Page, IDisposable
         }
     }
 
+    private async Task OpenRequestedFolderAsync(App app, FolderActivationRequestedEventArgs e)
+    {
+        if (_fileCommandInProgress || _folderActivationInProgress)
+        {
+            ViewModel.SetViewerStatus("Operacao em andamento");
+            SyncVisualState();
+            return;
+        }
+
+        var launchArguments = app.Services
+            .GetRequiredService<FolderLaunchArgumentsParser>()
+            .ParseRaw(e.RawArguments);
+        if (!launchArguments.HasFolder)
+        {
+            return;
+        }
+
+        _folderActivationInProgress = true;
+        try
+        {
+            if (_currentSession is not null && !await ConfirmOpenNewSessionAsync(launchArguments))
+            {
+                ViewModel.SetViewerStatus("Sessao atual mantida");
+                SyncVisualState();
+                ViewerHost.Focus(FocusState.Programmatic);
+                return;
+            }
+
+            _imageLoadCancellation?.Cancel();
+            CurrentPhotoImage.Source = null;
+            var result = await ViewModel.LoadInitialSessionAsync(
+                Task.Run(() => app.OpenSessionFromRawArgumentsAsync(e.RawArguments)));
+            _currentSession = result?.Status == OpenFolderFromArgumentsStatus.Opened
+                ? result.SessionResult?.Session
+                : null;
+            SyncVisualState();
+
+            if (result?.Status == OpenFolderFromArgumentsStatus.Opened)
+            {
+                ViewerHost.Focus(FocusState.Programmatic);
+                await LoadCurrentPhotoAsync(app);
+            }
+        }
+        finally
+        {
+            _folderActivationInProgress = false;
+            ViewerHost.Focus(FocusState.Programmatic);
+        }
+    }
+
+    private async Task<bool> ConfirmOpenNewSessionAsync(FolderLaunchArguments launchArguments)
+    {
+        var dialog = new ContentDialog
+        {
+            XamlRoot = XamlRoot,
+            Title = "Abrir nova sessao?",
+            Content = $"Ja existe uma sessao aberta. Abrir a pasta recebida?{Environment.NewLine}{Environment.NewLine}{launchArguments.FolderPath}",
+            PrimaryButtonText = "Abrir nova sessao",
+            CloseButtonText = "Manter atual",
+            DefaultButton = ContentDialogButton.Primary
+        };
+
+        var result = await dialog.ShowAsync();
+        return result == ContentDialogResult.Primary;
+    }
+
     private void ApplyOptimisticFileCommandState(string statusText)
     {
         if (_currentSession is null)
@@ -378,6 +455,11 @@ public sealed partial class MainPage : Page, IDisposable
 
     private void OnUnloaded(object sender, RoutedEventArgs e)
     {
+        if (Microsoft.UI.Xaml.Application.Current is App app)
+        {
+            app.FolderActivationRequested -= OnFolderActivationRequested;
+        }
+
         Dispose();
     }
 
