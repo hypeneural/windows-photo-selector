@@ -132,10 +132,10 @@ Estado ja validado:
 - navegacao visual inicial por `Right`, `Left` e `Space`.
 - fullscreen limpo inicial com `F` e `Esc`.
 - move/restore local para `_deletadas_evydencia` com colisao segura.
+- delete sem UI com `PendingDelete`, `Deleted`, `DeleteFailed`, contadores e navegacao validados.
 
 Proximas fatias planejadas:
 
-- `DeleteManager` e `DeleteCurrentPhotoUseCase`;
 - `UndoManager` e `UndoLastDeleteUseCase`;
 - journal JSONL para delete/restore;
 - single-instance antes do menu de contexto do Explorer;

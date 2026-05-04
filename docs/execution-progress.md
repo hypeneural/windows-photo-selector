@@ -62,8 +62,8 @@ Ultima atualizacao: 2026-05-03
 
 - [ ] F3-01 - Criar `DeleteMode` e settings base.
 - [x] F3-02 - Implementar `FileMoveService` para move/restore local seguro.
-- [ ] F3-03 - Implementar `DeleteManager` de dominio com `PendingDelete`, `Deleted` e `DeleteFailed`.
-- [ ] F3-04 - Implementar `DeleteCurrentPhotoUseCase`.
+- [x] F3-03 - Implementar `DeleteManager` de dominio com `PendingDelete`, `Deleted` e `DeleteFailed`.
+- [x] F3-04 - Implementar `DeleteCurrentPhotoUseCase`.
 - [ ] F3-05 - Implementar `UndoManager` de dominio.
 - [ ] F3-06 - Implementar `UndoLastDeleteUseCase`.
 - [ ] F3-07 - Implementar `JsonlSessionJournalStore`.
@@ -78,7 +78,8 @@ Ultima atualizacao: 2026-05-03
 - Single-instance ainda nao foi implementado; deve vir antes do menu de contexto do Explorer.
 - Conversao do resultado de decode para `ImageSource`/viewer WinUI ja existe para a primeira foto, com navegacao visual inicial por `Right`, `Left` e `Space`.
 - Fullscreen inicial ja usa `AppWindow`/`FullScreenPresenter`, `F` alterna, `Esc` sai, e o decode recaptura `DisplayContext` com estado fullscreen.
-- `FileMoveService` ja move para `_deletadas_evydencia`, restaura, resolve colisao e preserva `LastWriteTimeUtc`; ainda falta ligar isso a `DeleteManager`, journal e atalhos `Delete`/`Ctrl+Z`.
+- `FileMoveService` ja move para `_deletadas_evydencia`, restaura, resolve colisao e preserva `LastWriteTimeUtc`; ja esta ligado ao `DeleteCurrentPhotoUseCase`.
+- `DeleteManager` e `DeleteCurrentPhotoUseCase` ja validam `PendingDelete`, `Deleted`, `DeleteFailed`, contadores e navegacao sem UI; ainda falta journal, undo e atalhos.
 - `WindowsDisplayContextService` captura `XamlRoot`, area util, escala de rasterizacao e estado fullscreen. Identificacao detalhada de monitor/display area fica para a fatia de segunda tela.
 
 ## Ultima validacao
@@ -128,6 +129,11 @@ Ultima atualizacao: 2026-05-03
 - [x] `tools/format.ps1` executado com sucesso apos 0018.
 - [x] `tools/build.ps1` executado com sucesso apos 0018: 0 warnings.
 - [x] `tools/test.ps1` executado com sucesso apos 0018: 71 testes.
+- [x] Fatia 0019 implementou `DeleteManager` e `DeleteCurrentPhotoUseCase`.
+- [x] `tools/test.ps1 -Filter "FullyQualifiedName~Core|FullyQualifiedName~Application|FullyQualifiedName~Integration"` executado com sucesso apos 0019: Core 27 testes, Application 22 testes, Integration 3 testes.
+- [x] `tools/format.ps1` executado com sucesso apos 0019.
+- [x] `tools/build.ps1` executado com sucesso apos 0019: 0 warnings.
+- [x] `tools/test.ps1` executado com sucesso apos 0019: 82 testes.
 
 ## Ultima fatia concluida
 
@@ -149,16 +155,17 @@ Ultima atualizacao: 2026-05-03
 - 0016 - Navegacao visual por setas/espaco no viewer WinUI com cancelamento de decode anterior.
 - 0017 - Fullscreen limpo inicial com `F`, `Esc` e recaptura de `DisplayContext`.
 - 0018 - Fundacao de move/restore para `_deletadas_evydencia` com colisao, timestamp e read-only.
+- 0019 - `DeleteManager` e `DeleteCurrentPhotoUseCase` sem UI, com status, contadores, navegacao e move real em teste de integracao.
 
 ## Cobertura atual de testes
 
-- `Core.Tests`: 22 testes.
-- `Application.Tests`: 17 testes.
+- `Core.Tests`: 27 testes.
+- `Application.Tests`: 22 testes.
 - `Imaging.Tests`: 15 testes.
 - `Storage.Tests`: 10 testes.
-- `IntegrationTests`: 2 testes.
+- `IntegrationTests`: 3 testes.
 - `UiSmokeTests`: 5 testes.
-- Total atual: 71 testes.
+- Total atual: 82 testes.
 
 ## Toolchain validado
 

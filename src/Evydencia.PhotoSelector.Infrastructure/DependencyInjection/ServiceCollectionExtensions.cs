@@ -1,6 +1,7 @@
 using Evydencia.PhotoSelector.Application.Activation;
 using Evydencia.PhotoSelector.Application.Abstractions;
 using Evydencia.PhotoSelector.Application.UseCases;
+using Evydencia.PhotoSelector.Core.Deletion;
 using Evydencia.PhotoSelector.Core.Sessions;
 using Evydencia.PhotoSelector.Imaging.Decode;
 using Evydencia.PhotoSelector.Imaging.Sizing;
@@ -16,6 +17,7 @@ public static class ServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(services);
 
         services.AddSingleton<PhotoSessionFactory>();
+        services.AddSingleton<DeleteManager>();
         services.AddSingleton<DecodeTargetCalculator>();
         services.AddSingleton<JpegDecodeService>();
         services.AddSingleton<FolderLaunchArgumentsParser>();
@@ -26,6 +28,7 @@ public static class ServiceCollectionExtensions
         services.AddTransient<OpenSessionUseCase>();
         services.AddTransient<NavigateNextPhotoUseCase>();
         services.AddTransient<NavigatePreviousPhotoUseCase>();
+        services.AddTransient<DeleteCurrentPhotoUseCase>();
 
         return services;
     }

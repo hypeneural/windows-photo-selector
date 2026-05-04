@@ -750,7 +750,8 @@ Atualizacao de execucao:
 - A fatia 0016 iniciou navegacao visual por `Right`, `Left` e `Space`, mantendo cancelamento do decode anterior a cada troca.
 - A fatia 0017 implementou fullscreen limpo inicial com `AppWindow`/`FullScreenPresenter`, atalhos `F` e `Esc`, e recaptura do `DisplayContext` com estado fullscreen.
 - A fatia 0018 implementou a fundacao de move/restore para `_deletadas_evydencia`, com destino unico, restore, colisao, timestamp preservado e arquivo read-only validado.
-- A proxima prioridade e implementar `DeleteManager`, `DeleteCurrentPhotoUseCase`, `UndoManager`, `UndoLastDeleteUseCase` e journal JSONL, mantendo single-instance como bloqueio antes do menu de contexto do Explorer.
+- A fatia 0019 implementou `DeleteManager` e `DeleteCurrentPhotoUseCase`, validando `PendingDelete`, `Deleted`, `DeleteFailed`, contadores, navegacao e move real em teste de integracao.
+- A proxima prioridade e implementar `UndoManager`, `UndoLastDeleteUseCase` e journal JSONL, mantendo single-instance como bloqueio antes do menu de contexto do Explorer.
 - Se os benchmarks com JPEGs reais de estudio mostrarem que scan + ordenacao comprometem o alvo de tempo ate primeira imagem, criar uma fatia especifica para `ProgressiveOpenSessionUseCase` ou `SessionOpenHandle`, documentando a diferenca entre "primeira foto por ordem final" e "primeira previsualizacao disponivel".
 
 ### 8.4 Single-instance e reativação por pasta
