@@ -15,13 +15,15 @@ public sealed class UndoLastDeleteUseCaseTests
     {
         var session = SessionFactory.Create("IMG_0001.jpg");
         var fileMoveService = new FakeFileMoveService(FailedRestoreResult(session.Photos[0]));
-        var useCase = new UndoLastDeleteUseCase(new UndoManager(), fileMoveService);
+        var journalStore = new FakeSessionJournalStore();
+        var useCase = new UndoLastDeleteUseCase(new UndoManager(), fileMoveService, journalStore);
 
         var result = await useCase.ExecuteAsync(session);
 
         Assert.AreEqual(UndoLastDeleteStatus.NoUndoAvailable, result.Status);
         Assert.IsNull(result.RestoredPhoto);
         Assert.IsNull(fileMoveService.LastDeletedPath);
+        Assert.IsEmpty(journalStore.Events);
     }
 
     [TestMethod]
@@ -29,11 +31,12 @@ public sealed class UndoLastDeleteUseCaseTests
     {
         var session = SessionFactory.Create("IMG_0001.jpg", "IMG_0002.jpg", "IMG_0003.jpg");
         var undoManager = new UndoManager();
-        await DeleteCurrentAsync(session, undoManager);
+        var journalStore = new FakeSessionJournalStore();
+        await DeleteCurrentAsync(session, undoManager, journalStore);
         var fileMoveService = new FakeFileMoveService(
             FailedRestoreResult(session.Photos[0]),
             SuccessRestoreResult(session.Photos[0]));
-        var useCase = new UndoLastDeleteUseCase(undoManager, fileMoveService);
+        var useCase = new UndoLastDeleteUseCase(undoManager, fileMoveService, journalStore);
 
         var result = await useCase.ExecuteAsync(session);
 
@@ -47,6 +50,15 @@ public sealed class UndoLastDeleteUseCaseTests
         Assert.AreEqual($"C:\\sessao\\_deletadas_evydencia\\IMG_0001.jpg", fileMoveService.LastDeletedPath);
         Assert.AreEqual(session.Photos[0].FullPath, fileMoveService.LastOriginalPath);
         Assert.IsFalse(undoManager.CanUndo(session));
+        CollectionAssert.AreEqual(
+            new[]
+            {
+                SessionJournalEventType.DeleteRequested,
+                SessionJournalEventType.Deleted,
+                SessionJournalEventType.UndoRequested,
+                SessionJournalEventType.Restored
+            },
+            journalStore.Events.Select(journalEvent => journalEvent.EventType).ToArray());
     }
 
     [TestMethod]
@@ -54,11 +66,12 @@ public sealed class UndoLastDeleteUseCaseTests
     {
         var session = SessionFactory.Create("IMG_0001.jpg", "IMG_0002.jpg", "IMG_0003.jpg");
         var undoManager = new UndoManager();
-        await DeleteCurrentAsync(session, undoManager);
+        var journalStore = new FakeSessionJournalStore();
+        await DeleteCurrentAsync(session, undoManager, journalStore);
         var fileMoveService = new FakeFileMoveService(
             FailedRestoreResult(session.Photos[0]),
             FailedRestoreResult(session.Photos[0]));
-        var useCase = new UndoLastDeleteUseCase(undoManager, fileMoveService);
+        var useCase = new UndoLastDeleteUseCase(undoManager, fileMoveService, journalStore);
 
         var result = await useCase.ExecuteAsync(session);
 
@@ -68,6 +81,15 @@ public sealed class UndoLastDeleteUseCaseTests
         Assert.AreEqual(2, result.ActiveCount);
         Assert.AreEqual(1, result.DeletedCount);
         Assert.IsTrue(undoManager.CanUndo(session));
+        CollectionAssert.AreEqual(
+            new[]
+            {
+                SessionJournalEventType.DeleteRequested,
+                SessionJournalEventType.Deleted,
+                SessionJournalEventType.UndoRequested,
+                SessionJournalEventType.RestoreFailed
+            },
+            journalStore.Events.Select(journalEvent => journalEvent.EventType).ToArray());
     }
 
     [TestMethod]
@@ -75,12 +97,13 @@ public sealed class UndoLastDeleteUseCaseTests
     {
         var session = SessionFactory.Create("IMG_0001.jpg", "IMG_0002.jpg");
         var undoManager = new UndoManager();
-        await DeleteCurrentAsync(session, undoManager);
+        var journalStore = new FakeSessionJournalStore();
+        await DeleteCurrentAsync(session, undoManager, journalStore);
         var fileMoveService = new FakeFileMoveService(
             FailedRestoreResult(session.Photos[0]),
             SuccessRestoreResult(session.Photos[0]),
             cancelRestore: true);
-        var useCase = new UndoLastDeleteUseCase(undoManager, fileMoveService);
+        var useCase = new UndoLastDeleteUseCase(undoManager, fileMoveService, journalStore);
 
         await Assert.ThrowsExactlyAsync<OperationCanceledException>(() => useCase.ExecuteAsync(session));
 
@@ -88,6 +111,14 @@ public sealed class UndoLastDeleteUseCaseTests
         Assert.AreEqual(1, session.ActiveCount);
         Assert.AreEqual(1, session.DeletedCount);
         Assert.IsTrue(undoManager.CanUndo(session));
+        CollectionAssert.AreEqual(
+            new[]
+            {
+                SessionJournalEventType.DeleteRequested,
+                SessionJournalEventType.Deleted,
+                SessionJournalEventType.UndoRequested
+            },
+            journalStore.Events.Select(journalEvent => journalEvent.EventType).ToArray());
     }
 
     [TestMethod]
@@ -95,7 +126,8 @@ public sealed class UndoLastDeleteUseCaseTests
     {
         var session = SessionFactory.Create("IMG_0001.jpg", "IMG_0002.jpg");
         var undoManager = new UndoManager();
-        await DeleteCurrentAsync(session, undoManager);
+        var journalStore = new FakeSessionJournalStore();
+        await DeleteCurrentAsync(session, undoManager, journalStore);
         var collisionPath = "C:\\sessao\\IMG_0001__restored_20260504_120000_001.jpg";
         var fileMoveService = new FakeFileMoveService(
             FailedRestoreResult(session.Photos[0]),
@@ -105,7 +137,7 @@ public sealed class UndoLastDeleteUseCaseTests
                 collisionPath,
                 collisionResolved: true,
                 DateTimeOffset.UtcNow));
-        var useCase = new UndoLastDeleteUseCase(undoManager, fileMoveService);
+        var useCase = new UndoLastDeleteUseCase(undoManager, fileMoveService, journalStore);
 
         var result = await useCase.ExecuteAsync(session);
 
@@ -118,12 +150,14 @@ public sealed class UndoLastDeleteUseCaseTests
 
     private static async Task DeleteCurrentAsync(
         Core.Sessions.PhotoSession session,
-        UndoManager undoManager)
+        UndoManager undoManager,
+        FakeSessionJournalStore journalStore)
     {
         var deleteUseCase = new DeleteCurrentPhotoUseCase(
             new DeleteManager(),
             new FakeFileMoveService(SuccessDeleteResult(session.Photos[0])),
-            undoManager);
+            undoManager,
+            journalStore);
         var deleteResult = await deleteUseCase.ExecuteAsync(session);
 
         Assert.AreEqual(DeleteCurrentPhotoStatus.Deleted, deleteResult.Status);

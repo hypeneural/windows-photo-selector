@@ -9,14 +9,17 @@ namespace Evydencia.PhotoSelector.Application.UseCases;
 public sealed class UndoLastDeleteUseCase
 {
     private readonly IFileMoveService _fileMoveService;
+    private readonly ISessionJournalStore _journalStore;
     private readonly UndoManager _undoManager;
 
     public UndoLastDeleteUseCase(
         UndoManager undoManager,
-        IFileMoveService fileMoveService)
+        IFileMoveService fileMoveService,
+        ISessionJournalStore journalStore)
     {
         _undoManager = undoManager;
         _fileMoveService = fileMoveService;
+        _journalStore = journalStore;
     }
 
     public async Task<UndoLastDeleteResult> ExecuteAsync(
@@ -37,25 +40,49 @@ public sealed class UndoLastDeleteUseCase
         var preferredCurrentPhotoId = request.PreferredCurrentPhoto?.Id;
         try
         {
+            await _journalStore
+                .AppendAsync(
+                    session,
+                    SessionJournalEvent.UndoRequested(
+                        session,
+                        request.RestoredPhoto,
+                        request.Operation.DeletedPath,
+                        request.Operation.OriginalPath),
+                    cancellationToken)
+                .ConfigureAwait(false);
+
             var moveResult = await _fileMoveService
                 .RestoreAsync(request.Operation.DeletedPath, request.Operation.OriginalPath, cancellationToken)
                 .ConfigureAwait(false);
 
             return moveResult.IsSuccess
-                ? CompleteRestore(session, request, moveResult)
-                : FailRestore(session, request, preferredCurrentPhotoId, moveResult);
+                ? await CompleteRestoreAsync(session, request, moveResult, cancellationToken)
+                    .ConfigureAwait(false)
+                : await FailRestoreAsync(
+                        session,
+                        request,
+                        preferredCurrentPhotoId,
+                        moveResult,
+                        cancellationToken)
+                    .ConfigureAwait(false);
         }
         catch (OperationCanceledException)
         {
             RestoreAfterCancellation(session, request, preferredCurrentPhotoId);
             throw;
         }
+        catch
+        {
+            RestoreAfterCancellation(session, request, preferredCurrentPhotoId);
+            throw;
+        }
     }
 
-    private UndoLastDeleteResult CompleteRestore(
+    private async Task<UndoLastDeleteResult> CompleteRestoreAsync(
         PhotoSession session,
         UndoRestoreRequestResult request,
-        FileMoveResult moveResult)
+        FileMoveResult moveResult,
+        CancellationToken cancellationToken)
     {
         if (!string.IsNullOrWhiteSpace(moveResult.ActualDestinationPath))
         {
@@ -63,6 +90,12 @@ public sealed class UndoLastDeleteUseCase
         }
 
         var completion = _undoManager.CompleteRestore(session, request.Operation!, request.RestoredPhoto!);
+        await _journalStore
+            .AppendAsync(
+                session,
+                SessionJournalEvent.Restored(session, completion.RestoredPhoto, moveResult),
+                cancellationToken)
+            .ConfigureAwait(false);
         return UndoLastDeleteResult.Restored(
             session,
             completion.RestoredPhoto,
@@ -70,17 +103,24 @@ public sealed class UndoLastDeleteUseCase
             moveResult);
     }
 
-    private UndoLastDeleteResult FailRestore(
+    private async Task<UndoLastDeleteResult> FailRestoreAsync(
         PhotoSession session,
         UndoRestoreRequestResult request,
         Guid? preferredCurrentPhotoId,
-        FileMoveResult moveResult)
+        FileMoveResult moveResult,
+        CancellationToken cancellationToken)
     {
         var completion = _undoManager.FailRestore(
             session,
             request.Operation!,
             request.RestoredPhoto!,
             preferredCurrentPhotoId);
+        await _journalStore
+            .AppendAsync(
+                session,
+                SessionJournalEvent.RestoreFailed(session, completion.RestoredPhoto, moveResult),
+                cancellationToken)
+            .ConfigureAwait(false);
         return UndoLastDeleteResult.RestoreFailed(
             session,
             completion.RestoredPhoto,

@@ -7,6 +7,7 @@ using Evydencia.PhotoSelector.Core.Undo;
 using Evydencia.PhotoSelector.Imaging.Decode;
 using Evydencia.PhotoSelector.Imaging.Sizing;
 using Evydencia.PhotoSelector.Storage.Filesystem;
+using Evydencia.PhotoSelector.Storage.Journal;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Evydencia.PhotoSelector.Infrastructure.DependencyInjection;
@@ -26,6 +27,7 @@ public static class ServiceCollectionExtensions
 
         services.AddTransient<IFolderScanner, FileSystemFolderScanner>();
         services.AddTransient<IFileMoveService, FileMoveService>();
+        services.AddSingleton<ISessionJournalStore, JsonlSessionJournalStore>();
         services.AddTransient<OpenFolderFromArgumentsUseCase>();
         services.AddTransient<OpenSessionUseCase>();
         services.AddTransient<NavigateNextPhotoUseCase>();

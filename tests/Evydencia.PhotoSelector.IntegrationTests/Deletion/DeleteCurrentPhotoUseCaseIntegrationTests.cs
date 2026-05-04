@@ -6,6 +6,7 @@ using Evydencia.PhotoSelector.Core.Scanning;
 using Evydencia.PhotoSelector.Core.Sessions;
 using Evydencia.PhotoSelector.Core.Undo;
 using Evydencia.PhotoSelector.Storage.Filesystem;
+using Evydencia.PhotoSelector.Storage.Journal;
 
 namespace Evydencia.PhotoSelector.IntegrationTests.Deletion;
 
@@ -21,7 +22,12 @@ public sealed class DeleteCurrentPhotoUseCaseIntegrationTests
             var firstPath = WriteFile(folderPath, "IMG_0001.jpg");
             WriteFile(folderPath, "IMG_0002.jpg");
             var session = CreateSession(folderPath, "IMG_0001.jpg", "IMG_0002.jpg");
-            var useCase = new DeleteCurrentPhotoUseCase(new DeleteManager(), new FileMoveService(), new UndoManager());
+            var journalStore = new JsonlSessionJournalStore();
+            var useCase = new DeleteCurrentPhotoUseCase(
+                new DeleteManager(),
+                new FileMoveService(),
+                new UndoManager(),
+                journalStore);
 
             var result = await useCase.ExecuteAsync(session);
 
@@ -36,6 +42,10 @@ public sealed class DeleteCurrentPhotoUseCaseIntegrationTests
             Assert.AreEqual(
                 Path.Combine(folderPath, FolderScanPolicy.DeletedFolderName, "IMG_0001.jpg"),
                 result.FileMoveResult.ActualDestinationPath);
+            var journalLines = await File.ReadAllLinesAsync(journalStore.GetJournalPath(session));
+            Assert.HasCount(2, journalLines);
+            StringAssert.Contains(journalLines[0], SessionJournalEventType.DeleteRequested);
+            StringAssert.Contains(journalLines[1], SessionJournalEventType.Deleted);
         }
         finally
         {
@@ -54,8 +64,13 @@ public sealed class DeleteCurrentPhotoUseCaseIntegrationTests
             var session = CreateSession(folderPath, "IMG_0001.jpg", "IMG_0002.jpg");
             var undoManager = new UndoManager();
             var fileMoveService = new FileMoveService();
-            var deleteUseCase = new DeleteCurrentPhotoUseCase(new DeleteManager(), fileMoveService, undoManager);
-            var undoUseCase = new UndoLastDeleteUseCase(undoManager, fileMoveService);
+            var journalStore = new JsonlSessionJournalStore();
+            var deleteUseCase = new DeleteCurrentPhotoUseCase(
+                new DeleteManager(),
+                fileMoveService,
+                undoManager,
+                journalStore);
+            var undoUseCase = new UndoLastDeleteUseCase(undoManager, fileMoveService, journalStore);
 
             var deleteResult = await deleteUseCase.ExecuteAsync(session);
             var undoResult = await undoUseCase.ExecuteAsync(session);
@@ -69,6 +84,12 @@ public sealed class DeleteCurrentPhotoUseCaseIntegrationTests
             Assert.IsTrue(File.Exists(firstPath));
             Assert.IsFalse(File.Exists(deleteResult.FileMoveResult?.ActualDestinationPath));
             Assert.AreEqual(firstPath, undoResult.FileMoveResult?.ActualDestinationPath);
+            var journalLines = await File.ReadAllLinesAsync(journalStore.GetJournalPath(session));
+            Assert.HasCount(4, journalLines);
+            StringAssert.Contains(journalLines[0], SessionJournalEventType.DeleteRequested);
+            StringAssert.Contains(journalLines[1], SessionJournalEventType.Deleted);
+            StringAssert.Contains(journalLines[2], SessionJournalEventType.UndoRequested);
+            StringAssert.Contains(journalLines[3], SessionJournalEventType.Restored);
         }
         finally
         {

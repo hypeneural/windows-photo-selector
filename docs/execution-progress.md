@@ -66,7 +66,7 @@ Ultima atualizacao: 2026-05-04
 - [x] F3-04 - Implementar `DeleteCurrentPhotoUseCase`.
 - [x] F3-05 - Implementar `UndoManager` de dominio.
 - [x] F3-06 - Implementar `UndoLastDeleteUseCase`.
-- [ ] F3-07 - Implementar `JsonlSessionJournalStore`.
+- [x] F3-07 - Implementar `JsonlSessionJournalStore`.
 - [ ] F3-08 - Implementar replay basico de journal.
 - [ ] F3-09 - Tratar arquivo bloqueado no fluxo de delete.
 - [ ] F3-10 - Tratar arquivo ausente no fluxo de delete.
@@ -79,7 +79,7 @@ Ultima atualizacao: 2026-05-04
 - Conversao do resultado de decode para `ImageSource`/viewer WinUI ja existe para a primeira foto, com navegacao visual inicial por `Right`, `Left` e `Space`.
 - Fullscreen inicial ja usa `AppWindow`/`FullScreenPresenter`, `F` alterna, `Esc` sai, e o decode recaptura `DisplayContext` com estado fullscreen.
 - `FileMoveService` ja move para `_deletadas_evydencia`, restaura, resolve colisao e preserva `LastWriteTimeUtc`; ja esta ligado ao `DeleteCurrentPhotoUseCase`.
-- `DeleteManager`, `DeleteCurrentPhotoUseCase`, `UndoManager` e `UndoLastDeleteUseCase` ja validam `PendingDelete`, `Deleted`, `PendingRestore`, `Restored`, `DeleteFailed`, contadores e navegacao sem UI; ainda falta journal e atalhos.
+- `DeleteManager`, `DeleteCurrentPhotoUseCase`, `UndoManager` e `UndoLastDeleteUseCase` ja validam `PendingDelete`, `Deleted`, `PendingRestore`, `Restored`, `DeleteFailed`, contadores e navegacao sem UI; `JsonlSessionJournalStore` ja registra delete/restore em JSONL; ainda falta replay de journal e atalhos.
 - `WindowsDisplayContextService` captura `XamlRoot`, area util, escala de rasterizacao e estado fullscreen. Identificacao detalhada de monitor/display area fica para a fatia de segunda tela.
 
 ## Ultima validacao
@@ -139,6 +139,11 @@ Ultima atualizacao: 2026-05-04
 - [x] `tools/format.ps1` executado com sucesso apos 0020.
 - [x] `tools/build.ps1` executado com sucesso apos 0020: 0 warnings.
 - [x] `tools/test.ps1` executado com sucesso apos 0020: 93 testes.
+- [x] Fatia 0021 implementou `JsonlSessionJournalStore` e registro de eventos em delete/restore.
+- [x] `tools/test.ps1 -Filter "FullyQualifiedName~Application|FullyQualifiedName~Storage|FullyQualifiedName~Integration"` executado com sucesso apos 0021: Application 27 testes, Storage 12 testes, Integration 4 testes.
+- [x] `tools/format.ps1` executado com sucesso apos 0021.
+- [x] `tools/build.ps1` executado com sucesso apos 0021: 0 warnings.
+- [x] `tools/test.ps1` executado com sucesso apos 0021: 95 testes.
 
 ## Ultima fatia concluida
 
@@ -162,16 +167,17 @@ Ultima atualizacao: 2026-05-04
 - 0018 - Fundacao de move/restore para `_deletadas_evydencia` com colisao, timestamp e read-only.
 - 0019 - `DeleteManager` e `DeleteCurrentPhotoUseCase` sem UI, com status, contadores, navegacao e move real em teste de integracao.
 - 0020 - `UndoManager` e `UndoLastDeleteUseCase` sem UI, com pilha LIFO por sessao, restore real em teste de integracao e retry seguro em falha.
+- 0021 - `JsonlSessionJournalStore` com eventos JSONL append-only para delete e restore, integrado aos use cases sem UI.
 
 ## Cobertura atual de testes
 
 - `Core.Tests`: 32 testes.
 - `Application.Tests`: 27 testes.
 - `Imaging.Tests`: 15 testes.
-- `Storage.Tests`: 10 testes.
+- `Storage.Tests`: 12 testes.
 - `IntegrationTests`: 4 testes.
 - `UiSmokeTests`: 5 testes.
-- Total atual: 93 testes.
+- Total atual: 95 testes.
 
 ## Toolchain validado
 

@@ -4,6 +4,7 @@ using Evydencia.PhotoSelector.Application.UseCases;
 using Evydencia.PhotoSelector.Imaging.Sizing;
 using Evydencia.PhotoSelector.Infrastructure.DependencyInjection;
 using Evydencia.PhotoSelector.Storage.Filesystem;
+using Evydencia.PhotoSelector.Storage.Journal;
 
 namespace Evydencia.PhotoSelector.IntegrationTests.Composition;
 
@@ -22,6 +23,7 @@ public sealed class DependencyInjectionTests
         Assert.IsInstanceOfType<UndoLastDeleteUseCase>(provider.GetService(typeof(UndoLastDeleteUseCase)));
         Assert.IsInstanceOfType<FileSystemFolderScanner>(provider.GetService(typeof(IFolderScanner)));
         Assert.IsInstanceOfType<FileMoveService>(provider.GetService(typeof(IFileMoveService)));
+        Assert.IsInstanceOfType<JsonlSessionJournalStore>(provider.GetService(typeof(ISessionJournalStore)));
         Assert.IsInstanceOfType<DecodeTargetCalculator>(provider.GetService(typeof(DecodeTargetCalculator)));
         Assert.IsInstanceOfType<FolderLaunchArgumentsParser>(provider.GetService(typeof(FolderLaunchArgumentsParser)));
         Assert.IsInstanceOfType<OpenFolderFromArgumentsUseCase>(provider.GetService(typeof(OpenFolderFromArgumentsUseCase)));

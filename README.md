@@ -134,10 +134,11 @@ Estado ja validado:
 - move/restore local para `_deletadas_evydencia` com colisao segura.
 - delete sem UI com `PendingDelete`, `Deleted`, `DeleteFailed`, contadores e navegacao validados.
 - undo sem UI com `PendingRestore`, `Restored`, pilha por sessao, contadores e restore real validados.
+- journal JSONL append-only para delete/restore.
 
 Proximas fatias planejadas:
 
-- journal JSONL para delete/restore;
+- replay basico de journal e reconciliacao inicial;
 - single-instance antes do menu de contexto do Explorer;
 - atalhos `Delete` e `Ctrl+Z` no viewer.
 
