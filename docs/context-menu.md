@@ -69,6 +69,13 @@ Depois instale ou reinstale o pacote:
 .\tools\install-msix-dev.ps1 -Reinstall
 ```
 
+O MSIX dev tambem registra aliases de execucao para testes e para o Launcher futuro:
+
+```text
+EvydenciaPhotoSelector.exe
+AbrirEscolherFotos.exe
+```
+
 Valide duas ativacoes reais do app instalado:
 
 ```powershell

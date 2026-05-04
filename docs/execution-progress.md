@@ -200,6 +200,13 @@ Ultima atualizacao: 2026-05-04
 - [x] `tools/build.ps1` executado com sucesso apos 0028: 0 warnings.
 - [x] `tools/test.ps1` executado com sucesso apos 0028: 122 testes.
 - [ ] `Add-AppxPackage` e smoke empacotado seguem bloqueados ate executar trust em PowerShell elevado.
+- [x] Fatia 0029 instalou o MSIX dev apos confiar certificado em `LocalMachine\TrustedPeople`.
+- [x] `appExecutionAlias` adicionado ao manifest para `EvydenciaPhotoSelector.exe` e `AbrirEscolherFotos.exe`.
+- [x] Viewer aberto para preview visual da pasta `C:\Users\Usuario\Desktop\bkp geral\BKP 1712\SD 3\DCIM\100CAROL` via publish unpackaged dev.
+- [ ] Smoke MSIX empacotado ainda nao passou: `Start-Process` pelo alias retornou acesso/execucao negados nesta sessao, `IApplicationActivationManager` retornou `0x80270254` e `Invoke-CommandInDesktopPackage` falhou com `AccessViolationException`.
+- [x] `tools/format.ps1` executado com sucesso apos 0029.
+- [x] `tools/build.ps1` executado com sucesso apos 0029: 0 warnings.
+- [x] `tools/test.ps1` executado com sucesso apos 0029: 122 testes.
 
 ## Ultima fatia concluida
 
@@ -231,6 +238,7 @@ Ultima atualizacao: 2026-05-04
 - 0026 - Validacao de runtime/registro empacotado, `Launcher` minimo e fallback HKCU de menu de contexto de desenvolvimento.
 - 0027 - MSIX dev assinado e scripts de instalacao/smoke para desbloquear validacao single-instance empacotada; F0-19 permanece pendente ate instalar o pacote e passar o smoke.
 - 0028 - Diagnostico de pre-requisitos MSIX dev e ajuste do trust de certificado para `LocalMachine\TrustedPeople`.
+- 0029 - Preview unpackaged do viewer com pasta real e investigacao do launch empacotado por alias MSIX.
 
 ## Cobertura atual de testes
 

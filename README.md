@@ -132,6 +132,13 @@ MSIX dev assinado e smoke single-instance:
 .\tools\smoke-msix-single-instance.ps1
 ```
 
+Preview unpackaged para desenvolvimento:
+
+```powershell
+.\tools\publish-unpackaged-dev.ps1
+.\tools\launch-unpackaged-dev.ps1 -Folder "C:\caminho\da\sessao"
+```
+
 ## Status atual
 
 Consulte o progresso de execucao em:
@@ -165,6 +172,7 @@ Estado ja validado:
 - `Launcher` minimo para receber pasta do Explorer, validar caminho e encaminhar para o app.
 - fallback HKCU de menu de contexto de desenvolvimento para clique em pasta e no fundo da pasta.
 - empacotamento MSIX dev assinado iniciado para validar single-instance instalado.
+- preview unpackaged dev publicado em `artifacts\unpackaged-debug` para abrir o viewer enquanto F0-19 e investigado.
 
 Proximas fatias planejadas:
 
