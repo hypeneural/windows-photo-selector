@@ -135,12 +135,12 @@ Estado ja validado:
 - delete sem UI com `PendingDelete`, `Deleted`, `DeleteFailed`, contadores e navegacao validados.
 - undo sem UI com `PendingRestore`, `Restored`, pilha por sessao, contadores e restore real validados.
 - journal JSONL append-only para delete/restore.
+- replay basico de journal e reconciliacao inicial com filesystem como fonte da verdade.
 
 Proximas fatias planejadas:
 
-- replay basico de journal e reconciliacao inicial;
+- ligar `Delete` e `Ctrl+Z` no viewer ou tratar arquivos bloqueados/ausentes no fluxo operacional;
 - single-instance antes do menu de contexto do Explorer;
-- atalhos `Delete` e `Ctrl+Z` no viewer.
 
 ## Documentacao principal
 

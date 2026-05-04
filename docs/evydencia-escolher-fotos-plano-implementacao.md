@@ -753,7 +753,8 @@ Atualizacao de execucao:
 - A fatia 0019 implementou `DeleteManager` e `DeleteCurrentPhotoUseCase`, validando `PendingDelete`, `Deleted`, `DeleteFailed`, contadores, navegacao e move real em teste de integracao.
 - A fatia 0020 implementou `UndoManager` e `UndoLastDeleteUseCase`, validando `PendingRestore`, `Restored`, restore real em teste de integracao, pilha LIFO por sessao e retry seguro em falha de restore.
 - A fatia 0021 implementou `JsonlSessionJournalStore` e eventos JSONL append-only para `DeleteRequested`, `Deleted`, `DeleteFailed`, `UndoRequested`, `Restored` e `RestoreFailed`, gravados em `_deletadas_evydencia`.
-- A proxima prioridade e implementar replay basico de journal/reconciliacao inicial antes de ligar os atalhos `Delete` e `Ctrl+Z`, mantendo single-instance como bloqueio antes do menu de contexto do Explorer.
+- A fatia 0022 implementou replay basico de journal/reconciliacao inicial com `ReplaySessionJournalUseCase`, leitura JSONL por `ReadEventsAsync`, filesystem vencendo divergencia e recuperacao de foto deletada nao escaneada na pasta original.
+- A proxima prioridade e ligar `Delete` e `Ctrl+Z` no viewer ou tratar explicitamente arquivos bloqueados/ausentes no fluxo operacional, mantendo single-instance como bloqueio antes do menu de contexto do Explorer.
 - Se os benchmarks com JPEGs reais de estudio mostrarem que scan + ordenacao comprometem o alvo de tempo ate primeira imagem, criar uma fatia especifica para `ProgressiveOpenSessionUseCase` ou `SessionOpenHandle`, documentando a diferenca entre "primeira foto por ordem final" e "primeira previsualizacao disponivel".
 
 ### 8.4 Single-instance e reativação por pasta
@@ -2008,7 +2009,7 @@ Critério de saída:
 | F3-05 | Implementar `UndoManager` | Ctrl+Z marca `PendingRestore` e restaura último delete confirmado |
 | F3-06 | Implementar `UndoLastDeleteUseCase` | Restore reinserido pelo `SortIndex` |
 | F3-07 | Implementar `JsonlSessionJournalStore` | Eventos são gravados em JSONL |
-| F3-08 | Implementar replay básico de journal | Estado pode ser reconstruído em teste |
+| F3-08 | Implementar replay básico de journal | Estado pode ser reconstruído em teste; feito na fatia 0022 |
 | F3-09 | Tratar arquivo bloqueado | Erro visível e estado consistente |
 | F3-10 | Tratar arquivo ausente | Foto vira `Missing` e app continua |
 | F3-11 | Atualizar contadores em todas as transições | Testes cobrem delete/undo/fim da lista |

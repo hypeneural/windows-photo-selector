@@ -97,6 +97,46 @@ public sealed class DeleteCurrentPhotoUseCaseIntegrationTests
         }
     }
 
+    [TestMethod]
+    public async Task ReplaySessionJournalAfterReopenRecoversDeletedPhotoState()
+    {
+        var folderPath = CreateTemporaryFolder();
+        try
+        {
+            WriteFile(folderPath, "IMG_0001.jpg");
+            WriteFile(folderPath, "IMG_0002.jpg");
+            var originalSession = CreateSession(folderPath, "IMG_0001.jpg", "IMG_0002.jpg");
+            var journalStore = new JsonlSessionJournalStore();
+            var deleteUseCase = new DeleteCurrentPhotoUseCase(
+                new DeleteManager(),
+                new FileMoveService(),
+                new UndoManager(),
+                journalStore);
+
+            var deleteResult = await deleteUseCase.ExecuteAsync(originalSession);
+            var reopenedSession = CreateSession(folderPath, "IMG_0002.jpg");
+            var replayUseCase = new ReplaySessionJournalUseCase(
+                journalStore,
+                new FileSystemFileExistenceService());
+
+            var replayResult = await replayUseCase.ExecuteAsync(reopenedSession);
+
+            Assert.AreEqual(DeleteCurrentPhotoStatus.Deleted, deleteResult.Status);
+            Assert.AreEqual(2, replayResult.EventsRead);
+            Assert.AreEqual(1, replayResult.EventsApplied);
+            Assert.AreEqual(1, replayResult.RecoveredPhotos);
+            Assert.AreEqual(2, reopenedSession.InitialCount);
+            Assert.AreEqual(1, reopenedSession.ActiveCount);
+            Assert.AreEqual(1, reopenedSession.DeletedCount);
+            var recoveredPhoto = reopenedSession.Photos.Single(photo => photo.FileName == "IMG_0001.jpg");
+            Assert.AreEqual(PhotoStatus.Deleted, recoveredPhoto.Status);
+        }
+        finally
+        {
+            DeleteTemporaryFolder(folderPath);
+        }
+    }
+
     private static PhotoSession CreateSession(string folderPath, params string[] fileNames)
     {
         var candidates = fileNames.Select((fileName, index) =>

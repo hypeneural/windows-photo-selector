@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Evydencia.PhotoSelector.Core.Photos;
 using Evydencia.PhotoSelector.Core.Sessions;
 
@@ -5,7 +6,8 @@ namespace Evydencia.PhotoSelector.Application.Models;
 
 public sealed class SessionJournalEvent
 {
-    private SessionJournalEvent(
+    [JsonConstructor]
+    public SessionJournalEvent(
         Guid eventId,
         Guid sessionId,
         string eventType,

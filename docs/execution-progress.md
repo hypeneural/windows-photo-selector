@@ -67,7 +67,7 @@ Ultima atualizacao: 2026-05-04
 - [x] F3-05 - Implementar `UndoManager` de dominio.
 - [x] F3-06 - Implementar `UndoLastDeleteUseCase`.
 - [x] F3-07 - Implementar `JsonlSessionJournalStore`.
-- [ ] F3-08 - Implementar replay basico de journal.
+- [x] F3-08 - Implementar replay basico de journal.
 - [ ] F3-09 - Tratar arquivo bloqueado no fluxo de delete.
 - [ ] F3-10 - Tratar arquivo ausente no fluxo de delete.
 - [ ] F3-11 - Atualizar contadores em todas as transicoes.
@@ -79,7 +79,7 @@ Ultima atualizacao: 2026-05-04
 - Conversao do resultado de decode para `ImageSource`/viewer WinUI ja existe para a primeira foto, com navegacao visual inicial por `Right`, `Left` e `Space`.
 - Fullscreen inicial ja usa `AppWindow`/`FullScreenPresenter`, `F` alterna, `Esc` sai, e o decode recaptura `DisplayContext` com estado fullscreen.
 - `FileMoveService` ja move para `_deletadas_evydencia`, restaura, resolve colisao e preserva `LastWriteTimeUtc`; ja esta ligado ao `DeleteCurrentPhotoUseCase`.
-- `DeleteManager`, `DeleteCurrentPhotoUseCase`, `UndoManager` e `UndoLastDeleteUseCase` ja validam `PendingDelete`, `Deleted`, `PendingRestore`, `Restored`, `DeleteFailed`, contadores e navegacao sem UI; `JsonlSessionJournalStore` ja registra delete/restore em JSONL; ainda falta replay de journal e atalhos.
+- `DeleteManager`, `DeleteCurrentPhotoUseCase`, `UndoManager` e `UndoLastDeleteUseCase` ja validam `PendingDelete`, `Deleted`, `PendingRestore`, `Restored`, `DeleteFailed`, contadores e navegacao sem UI; `JsonlSessionJournalStore` ja registra delete/restore em JSONL; `ReplaySessionJournalUseCase` ja faz replay basico e reconciliacao inicial; ainda faltam atalhos `Delete`/`Ctrl+Z` no viewer.
 - `WindowsDisplayContextService` captura `XamlRoot`, area util, escala de rasterizacao e estado fullscreen. Identificacao detalhada de monitor/display area fica para a fatia de segunda tela.
 
 ## Ultima validacao
@@ -144,6 +144,11 @@ Ultima atualizacao: 2026-05-04
 - [x] `tools/format.ps1` executado com sucesso apos 0021.
 - [x] `tools/build.ps1` executado com sucesso apos 0021: 0 warnings.
 - [x] `tools/test.ps1` executado com sucesso apos 0021: 95 testes.
+- [x] Fatia 0022 implementou replay basico de journal e reconciliacao inicial por filesystem.
+- [x] `tools/test.ps1 -Filter "FullyQualifiedName~Application|FullyQualifiedName~Storage|FullyQualifiedName~Integration"` executado com sucesso apos 0022: Application 32 testes, Storage 14 testes, Integration 5 testes.
+- [x] `tools/format.ps1` executado com sucesso apos 0022.
+- [x] `tools/build.ps1` executado com sucesso apos 0022: 0 warnings.
+- [x] `tools/test.ps1` executado com sucesso apos 0022: 103 testes.
 
 ## Ultima fatia concluida
 
@@ -168,16 +173,17 @@ Ultima atualizacao: 2026-05-04
 - 0019 - `DeleteManager` e `DeleteCurrentPhotoUseCase` sem UI, com status, contadores, navegacao e move real em teste de integracao.
 - 0020 - `UndoManager` e `UndoLastDeleteUseCase` sem UI, com pilha LIFO por sessao, restore real em teste de integracao e retry seguro em falha.
 - 0021 - `JsonlSessionJournalStore` com eventos JSONL append-only para delete e restore, integrado aos use cases sem UI.
+- 0022 - Replay basico de journal com `ReplaySessionJournalUseCase`, leitura JSONL, reconciliacao por filesystem e recuperacao de fotos deletadas nao escaneadas.
 
 ## Cobertura atual de testes
 
 - `Core.Tests`: 32 testes.
-- `Application.Tests`: 27 testes.
+- `Application.Tests`: 32 testes.
 - `Imaging.Tests`: 15 testes.
-- `Storage.Tests`: 12 testes.
-- `IntegrationTests`: 4 testes.
+- `Storage.Tests`: 14 testes.
+- `IntegrationTests`: 5 testes.
 - `UiSmokeTests`: 5 testes.
-- Total atual: 95 testes.
+- Total atual: 103 testes.
 
 ## Toolchain validado
 

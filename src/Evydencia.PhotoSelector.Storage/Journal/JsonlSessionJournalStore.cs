@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using System.Runtime.CompilerServices;
 using Evydencia.PhotoSelector.Application.Abstractions;
 using Evydencia.PhotoSelector.Application.Models;
 using Evydencia.PhotoSelector.Core.Scanning;
@@ -60,6 +61,45 @@ public sealed class JsonlSessionJournalStore : ISessionJournalStore, IDisposable
         finally
         {
             _appendGate.Release();
+        }
+    }
+
+    public async IAsyncEnumerable<SessionJournalEvent> ReadEventsAsync(
+        PhotoSession session,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(session);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var journalPath = GetJournalPath(session);
+        if (!File.Exists(journalPath))
+        {
+            yield break;
+        }
+
+        await foreach (var line in File.ReadLinesAsync(journalPath, Utf8NoBom, cancellationToken)
+            .ConfigureAwait(false))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (string.IsNullOrWhiteSpace(line))
+            {
+                continue;
+            }
+
+            SessionJournalEvent? journalEvent;
+            try
+            {
+                journalEvent = JsonSerializer.Deserialize<SessionJournalEvent>(line, SerializerOptions);
+            }
+            catch (JsonException)
+            {
+                continue;
+            }
+
+            if (journalEvent is not null)
+            {
+                yield return journalEvent;
+            }
         }
     }
 

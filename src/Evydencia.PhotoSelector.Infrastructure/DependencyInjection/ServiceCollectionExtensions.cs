@@ -27,6 +27,7 @@ public static class ServiceCollectionExtensions
 
         services.AddTransient<IFolderScanner, FileSystemFolderScanner>();
         services.AddTransient<IFileMoveService, FileMoveService>();
+        services.AddSingleton<IFileExistenceService, FileSystemFileExistenceService>();
         services.AddSingleton<ISessionJournalStore, JsonlSessionJournalStore>();
         services.AddTransient<OpenFolderFromArgumentsUseCase>();
         services.AddTransient<OpenSessionUseCase>();
@@ -34,6 +35,7 @@ public static class ServiceCollectionExtensions
         services.AddTransient<NavigatePreviousPhotoUseCase>();
         services.AddTransient<DeleteCurrentPhotoUseCase>();
         services.AddTransient<UndoLastDeleteUseCase>();
+        services.AddTransient<ReplaySessionJournalUseCase>();
 
         return services;
     }

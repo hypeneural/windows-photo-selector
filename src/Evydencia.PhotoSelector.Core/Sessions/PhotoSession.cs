@@ -59,6 +59,23 @@ public sealed class PhotoSession
             .ToList();
     }
 
+    public void AddRecoveredPhoto(PhotoItem photo)
+    {
+        ArgumentNullException.ThrowIfNull(photo);
+
+        if (_photos.Any(item => item.Id == photo.Id))
+        {
+            return;
+        }
+
+        if (_photos.Any(item => string.Equals(item.FullPath, photo.FullPath, StringComparison.OrdinalIgnoreCase)))
+        {
+            return;
+        }
+
+        _photos.Add(photo);
+    }
+
     internal int IndexOfActivePhoto(Guid photoId)
     {
         var active = ActivePhotos();

@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using Evydencia.PhotoSelector.Application.Abstractions;
 using Evydencia.PhotoSelector.Application.Models;
 using Evydencia.PhotoSelector.Core.Sessions;
@@ -20,5 +21,17 @@ internal sealed class FakeSessionJournalStore : ISessionJournalStore
     {
         Events.Add(journalEvent);
         return Task.CompletedTask;
+    }
+
+    public async IAsyncEnumerable<SessionJournalEvent> ReadEventsAsync(
+        PhotoSession session,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        foreach (var journalEvent in Events)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            yield return journalEvent;
+            await Task.Yield();
+        }
     }
 }

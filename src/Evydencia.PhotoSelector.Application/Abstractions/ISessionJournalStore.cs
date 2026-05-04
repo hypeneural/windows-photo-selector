@@ -11,4 +11,8 @@ public interface ISessionJournalStore
         PhotoSession session,
         SessionJournalEvent journalEvent,
         CancellationToken cancellationToken = default);
+
+    IAsyncEnumerable<SessionJournalEvent> ReadEventsAsync(
+        PhotoSession session,
+        CancellationToken cancellationToken = default);
 }
