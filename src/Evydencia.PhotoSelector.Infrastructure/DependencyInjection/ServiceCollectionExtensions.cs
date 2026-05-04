@@ -31,8 +31,10 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<ISessionJournalStore, JsonlSessionJournalStore>();
         services.AddTransient<OpenFolderFromArgumentsUseCase>();
         services.AddTransient<OpenSessionUseCase>();
+        services.AddTransient<NavigateFirstPhotoUseCase>();
         services.AddTransient<NavigateNextPhotoUseCase>();
         services.AddTransient<NavigatePreviousPhotoUseCase>();
+        services.AddTransient<NavigateLastPhotoUseCase>();
         services.AddTransient<DeleteCurrentPhotoUseCase>();
         services.AddTransient<UndoLastDeleteUseCase>();
         services.AddTransient<ReplaySessionJournalUseCase>();

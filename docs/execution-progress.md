@@ -59,6 +59,7 @@ Ultima atualizacao: 2026-05-04
 - [x] F2-03 - Mostrar primeira foto no viewer.
 - [x] F2-04 - Navegacao visual por setas.
 - [x] F2-05 - Fullscreen limpo inicial.
+- [x] F2-06 - Corrigir atalhos do viewer para nao dependerem de foco no `ViewerHost`.
 
 ## Fase 3 - Delete e undo robusto
 
@@ -81,7 +82,7 @@ Ultima atualizacao: 2026-05-04
 - `Launcher` minimo ja recebe pasta, valida caminho e encaminha para o app com `--folder`; os scripts HKCU de desenvolvimento instalam/removem `Abrir Escolher Fotos` para clique em pasta e no fundo da pasta.
 - Single-instance inicial ja usa `AppInstance.FindOrRegisterForKey` e `RedirectActivationToAsync` antes da criacao da janela. A validacao com app registrado/empacotado ainda precisa acontecer antes do menu de contexto do Explorer.
 - Empacotamento dev assinado ja tem scripts para gerar MSIX, confiar certificado em ambiente elevado, instalar/reinstalar e rodar smoke single-instance instalado.
-- Conversao do resultado de decode para `ImageSource`/viewer WinUI ja existe para a primeira foto, com navegacao visual inicial por `Right`, `Left` e `Space`.
+- Conversao do resultado de decode para `ImageSource`/viewer WinUI ja existe para a primeira foto, com navegacao visual por `Right`, `Left`, `Space`, `Home` e `End`; atalhos do viewer agora usam `KeyboardAccelerator` na pagina e `KeyDown` fica como fallback do `ViewerHost`.
 - Fullscreen inicial ja usa `AppWindow`/`FullScreenPresenter`, `F` alterna, `Esc` sai, e o decode recaptura `DisplayContext` com estado fullscreen.
 - `FileMoveService` ja move para `_deletadas_evydencia`, restaura, resolve colisao e preserva `LastWriteTimeUtc`; ja esta ligado ao `DeleteCurrentPhotoUseCase`.
 - `DeleteManager`, `DeleteCurrentPhotoUseCase`, `UndoManager` e `UndoLastDeleteUseCase` ja validam `PendingDelete`, `Deleted`, `PendingRestore`, `Restored`, `Missing`, `DeleteFailed`, contadores e navegacao; `JsonlSessionJournalStore` ja registra delete/restore em JSONL; `ReplaySessionJournalUseCase` ja faz replay basico e reconciliacao inicial; os atalhos `Delete` e `Ctrl+Z` ja chamam os use cases reais no viewer.
@@ -207,6 +208,12 @@ Ultima atualizacao: 2026-05-04
 - [x] `tools/format.ps1` executado com sucesso apos 0029.
 - [x] `tools/build.ps1` executado com sucesso apos 0029: 0 warnings.
 - [x] `tools/test.ps1` executado com sucesso apos 0029: 122 testes.
+- [x] Fatia 0030 corrigiu a entrada de teclado do viewer: `Right`, `Left`, `Space`, `Delete`, `Ctrl+Z`, `F`, `Esc`, `Home` e `End` foram registrados como `KeyboardAccelerator` de pagina; `ViewerHost.KeyDown` permanece como fallback; falhas assincronas de atalho agora viram status discreto em vez de derrubar o app.
+- [x] Smoke manual automatizado validou `Right`/`Left` em pasta real por UI Automation e `Delete`/`Ctrl+Z` em pasta temporaria com copias de JPEGs; a pasta real foi reaberta para validacao manual.
+- [x] `tools/test.ps1 -Filter "FullyQualifiedName~Application|FullyQualifiedName~UiSmoke"` executado com sucesso apos 0030: Application 36 testes, UiSmoke 12 testes.
+- [x] `tools/format.ps1` executado com sucesso apos 0030.
+- [x] `tools/build.ps1` executado com sucesso apos 0030: 0 warnings.
+- [x] `tools/test.ps1` executado com sucesso apos 0030: 126 testes.
 
 ## Ultima fatia concluida
 
@@ -239,17 +246,18 @@ Ultima atualizacao: 2026-05-04
 - 0027 - MSIX dev assinado e scripts de instalacao/smoke para desbloquear validacao single-instance empacotada; F0-19 permanece pendente ate instalar o pacote e passar o smoke.
 - 0028 - Diagnostico de pre-requisitos MSIX dev e ajuste do trust de certificado para `LocalMachine\TrustedPeople`.
 - 0029 - Preview unpackaged do viewer com pasta real e investigacao do launch empacotado por alias MSIX.
+- 0030 - Atalhos do viewer corrigidos com `KeyboardAccelerator` de pagina, fallback `KeyDown`, `Home`/`End` e smoke manual automatizado de navegacao/delete/undo.
 
 ## Cobertura atual de testes
 
 - `Core.Tests`: 33 testes.
-- `Application.Tests`: 34 testes.
+- `Application.Tests`: 36 testes.
 - `Imaging.Tests`: 15 testes.
 - `Storage.Tests`: 16 testes.
 - `IntegrationTests`: 7 testes.
 - `Launcher.Tests`: 7 testes.
-- `UiSmokeTests`: 10 testes.
-- Total atual: 122 testes.
+- `UiSmokeTests`: 12 testes.
+- Total atual: 126 testes.
 
 ## Toolchain validado
 

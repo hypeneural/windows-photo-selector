@@ -43,4 +43,31 @@ public sealed class NavigationUseCaseTests
         Assert.AreEqual("IMG_0001.jpg", result.CurrentPhoto?.FileName);
         Assert.AreEqual(0, result.CurrentIndex);
     }
+
+    [TestMethod]
+    public void NavigateFirstMovesToFirstActivePhoto()
+    {
+        var session = SessionFactory.Create("IMG_0001.jpg", "IMG_0002.jpg", "IMG_0003.jpg");
+        var next = new NavigateNextPhotoUseCase();
+        next.Execute(session);
+        next.Execute(session);
+        var useCase = new NavigateFirstPhotoUseCase();
+
+        var result = useCase.Execute(session);
+
+        Assert.AreEqual("IMG_0001.jpg", result.CurrentPhoto?.FileName);
+        Assert.AreEqual(0, result.CurrentIndex);
+    }
+
+    [TestMethod]
+    public void NavigateLastMovesToLastActivePhoto()
+    {
+        var session = SessionFactory.Create("IMG_0001.jpg", "IMG_0002.jpg", "IMG_0003.jpg");
+        var useCase = new NavigateLastPhotoUseCase();
+
+        var result = useCase.Execute(session);
+
+        Assert.AreEqual("IMG_0003.jpg", result.CurrentPhoto?.FileName);
+        Assert.AreEqual(2, result.CurrentIndex);
+    }
 }

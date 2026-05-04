@@ -32,6 +32,7 @@ public sealed partial class MainPage : Page, IDisposable
     public MainPage()
     {
         InitializeComponent();
+        RegisterViewerKeyboardAccelerators();
         Loaded += OnLoaded;
         Unloaded += OnUnloaded;
     }
@@ -74,46 +75,153 @@ public sealed partial class MainPage : Page, IDisposable
 
     private async void OnViewerKeyDown(object sender, KeyRoutedEventArgs e)
     {
+        var isControlDown = IsControlKeyDown();
+        if (!CanRouteViewerShortcut(e.Key, isControlDown))
+        {
+            return;
+        }
+
+        e.Handled = true;
+        await HandleViewerShortcutSafelyAsync(e.Key, isControlDown);
+    }
+
+    private void RegisterViewerKeyboardAccelerators()
+    {
+        AddViewerKeyboardAccelerator(VirtualKey.Right);
+        AddViewerKeyboardAccelerator(VirtualKey.Left);
+        AddViewerKeyboardAccelerator(VirtualKey.Space);
+        AddViewerKeyboardAccelerator(VirtualKey.Delete);
+        AddViewerKeyboardAccelerator(VirtualKey.Z, VirtualKeyModifiers.Control);
+        AddViewerKeyboardAccelerator(VirtualKey.F);
+        AddViewerKeyboardAccelerator(VirtualKey.Escape);
+        AddViewerKeyboardAccelerator(VirtualKey.Home);
+        AddViewerKeyboardAccelerator(VirtualKey.End);
+    }
+
+    private void AddViewerKeyboardAccelerator(
+        VirtualKey key,
+        VirtualKeyModifiers modifiers = VirtualKeyModifiers.None)
+    {
+        var accelerator = new KeyboardAccelerator
+        {
+            Key = key,
+            Modifiers = modifiers
+        };
+        accelerator.Invoked += OnViewerKeyboardAcceleratorInvoked;
+        KeyboardAccelerators.Add(accelerator);
+    }
+
+    private async void OnViewerKeyboardAcceleratorInvoked(
+        KeyboardAccelerator sender,
+        KeyboardAcceleratorInvokedEventArgs args)
+    {
+        var isControlDown = (sender.Modifiers & VirtualKeyModifiers.Control) == VirtualKeyModifiers.Control;
+        if (IsTextInputFocused() || !CanRouteViewerShortcut(sender.Key, isControlDown))
+        {
+            return;
+        }
+
+        args.Handled = true;
+        await HandleViewerShortcutSafelyAsync(sender.Key, isControlDown);
+    }
+
+    private bool CanRouteViewerShortcut(VirtualKey key, bool isControlDown)
+    {
+        if (Microsoft.UI.Xaml.Application.Current is not App || _currentSession is null)
+        {
+            return false;
+        }
+
+        if (isControlDown)
+        {
+            return key == VirtualKey.Z;
+        }
+
+        return key is VirtualKey.Right
+            or VirtualKey.Left
+            or VirtualKey.Space
+            or VirtualKey.Delete
+            or VirtualKey.F
+            or VirtualKey.Escape
+            or VirtualKey.Home
+            or VirtualKey.End;
+    }
+
+    private async Task HandleViewerShortcutSafelyAsync(VirtualKey key, bool isControlDown)
+    {
+        try
+        {
+            await HandleViewerShortcutAsync(key, isControlDown);
+        }
+        catch (OperationCanceledException)
+        {
+            ViewModel.SetViewerStatus("Operacao cancelada");
+            SyncVisualState();
+        }
+        catch (Exception exception)
+        {
+            ViewModel.SetViewerStatus($"Falha no atalho: {exception.Message}");
+            SyncVisualState();
+        }
+        finally
+        {
+            ViewerHost.Focus(FocusState.Programmatic);
+        }
+    }
+
+    private async Task HandleViewerShortcutAsync(VirtualKey key, bool isControlDown)
+    {
         if (Microsoft.UI.Xaml.Application.Current is not App app || _currentSession is null)
         {
             return;
         }
 
-        if (e.Key == VirtualKey.Z && IsControlKeyDown())
+        if (key == VirtualKey.Z && isControlDown)
         {
-            e.Handled = true;
             await UndoLastDeleteAsync(app);
             return;
         }
 
-        if (e.Key == VirtualKey.Delete)
+        if (isControlDown)
         {
-            e.Handled = true;
+            return;
+        }
+
+        if (key == VirtualKey.Delete)
+        {
             await DeleteCurrentPhotoAsync(app);
             return;
         }
 
-        if (e.Key == VirtualKey.F)
+        if (key == VirtualKey.F)
         {
-            e.Handled = true;
             await ToggleFullscreenAsync(app);
             return;
         }
 
-        if (e.Key == VirtualKey.Escape)
+        if (key == VirtualKey.Escape)
         {
             var fullscreenService = app.Services.GetRequiredService<FullscreenService>();
             if (fullscreenService.IsFullscreen(app.MainWindow))
             {
-                e.Handled = true;
                 await ExitFullscreenAsync(app);
             }
 
             return;
         }
 
+        await NavigateByShortcutAsync(app, key);
+    }
+
+    private async Task NavigateByShortcutAsync(App app, VirtualKey key)
+    {
+        if (_currentSession is null)
+        {
+            return;
+        }
+
         var previousPhotoId = ViewModel.CurrentPhoto?.Id;
-        var navigationResult = e.Key switch
+        var navigationResult = key switch
         {
             VirtualKey.Right => app.Services
                 .GetRequiredService<NavigateNextPhotoUseCase>()
@@ -124,6 +232,12 @@ public sealed partial class MainPage : Page, IDisposable
             VirtualKey.Left => app.Services
                 .GetRequiredService<NavigatePreviousPhotoUseCase>()
                 .Execute(_currentSession),
+            VirtualKey.Home => app.Services
+                .GetRequiredService<NavigateFirstPhotoUseCase>()
+                .Execute(_currentSession),
+            VirtualKey.End => app.Services
+                .GetRequiredService<NavigateLastPhotoUseCase>()
+                .Execute(_currentSession),
             _ => null
         };
 
@@ -132,7 +246,6 @@ public sealed partial class MainPage : Page, IDisposable
             return;
         }
 
-        e.Handled = true;
         if (ViewModel.HasCurrentImage && navigationResult.CurrentPhoto?.Id == previousPhotoId)
         {
             ViewModel.ApplyNavigation(navigationResult);
@@ -142,6 +255,26 @@ public sealed partial class MainPage : Page, IDisposable
         }
 
         await NavigateToAsync(app, navigationResult);
+    }
+
+    private bool IsTextInputFocused()
+    {
+        try
+        {
+            if (XamlRoot is null)
+            {
+                return false;
+            }
+
+            return FocusManager.GetFocusedElement(XamlRoot) is TextBox
+                or PasswordBox
+                or RichEditBox
+                or AutoSuggestBox;
+        }
+        catch (InvalidOperationException)
+        {
+            return false;
+        }
     }
 
     private async Task DeleteCurrentPhotoAsync(App app)
