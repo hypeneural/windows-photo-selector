@@ -1,3 +1,8 @@
+param(
+    [string]$Configuration = "Debug",
+    [string]$Platform = ""
+)
+
 $ErrorActionPreference = "Stop"
 
 . "$PSScriptRoot\Get-DotNet.ps1"
@@ -12,4 +17,10 @@ if (-not (Test-Path $solution)) {
 }
 
 & $dotnet restore $solution
-& $dotnet build $solution -c Debug --no-restore
+
+$buildArgs = @($solution, "-c", $Configuration, "--no-restore")
+if ($Platform -ne "") {
+    $buildArgs += "-p:Platform=$Platform"
+}
+
+& $dotnet build @buildArgs

@@ -757,8 +757,9 @@ Atualizacao de execucao:
 - A fatia 0023 fechou F3-09/F3-10 com `FileLocked` para arquivo bloqueado, `Missing` para origem ausente, contadores consistentes e eventos `DeleteFailed` no journal.
 - A fatia 0024 ligou `Delete` e `Ctrl+Z` no viewer WinUI, chamando os use cases reais, atualizando foto/contadores e evitando comando de arquivo concorrente nesta primeira ligacao.
 - A fatia 0025 implementou single-instance inicial com `Program.cs` customizado, `DISABLE_XAML_GENERATED_MAIN`, `AppInstance.FindOrRegisterForKey`, `RedirectActivationToAsync` e reativacao por argumentos `Launch` na instancia principal.
-- O smoke por executavel direto ainda ficou inconclusivo porque o ambiente tem Windows App Runtime ate 1.8 registrado, mas nao 2.0; a validacao real deve ser repetida com app registrado/empacotado antes do menu de contexto do Explorer.
-- A proxima prioridade e polir overlay/retry visual ou validar runtime/empacotamento para liberar o menu de contexto do Explorer.
+- A fatia 0026 instalou Windows App Runtime 2.0.1 a partir dos MSIX oficiais presentes no NuGet local, mas o registro loose package falhou com `0x80073CFF` porque sideload/developer mode esta desabilitado e a sessao atual nao pode alterar `AppModelUnlock` em HKLM.
+- A fatia 0026 implementou `Evydencia.PhotoSelector.Launcher` minimo, scripts HKCU de menu de contexto classico para desenvolvimento e testes do parser/comando. O fallback dev foi validado com instalacao/remocao das chaves `Directory` e `Directory\Background`.
+- A proxima prioridade e decidir entre habilitar sideload/usar MSIX assinado confiavel para F0-19 ou seguir para o desenho do `ShellExtension`/`IExplorerCommand` moderno mantendo o fallback HKCU apenas para desenvolvimento.
 - Se os benchmarks com JPEGs reais de estudio mostrarem que scan + ordenacao comprometem o alvo de tempo ate primeira imagem, criar uma fatia especifica para `ProgressiveOpenSessionUseCase` ou `SessionOpenHandle`, documentando a diferenca entre "primeira foto por ordem final" e "primeira previsualizacao disponivel".
 
 ### 8.4 Single-instance e reativação por pasta
@@ -1959,13 +1960,14 @@ Critério de saída:
 | F0-10 | Definir metas de performance reais | Documento com baseline usando JPEGs do estúdio |
 | F0-11 | Validar .NET 10 + Windows App SDK 2.0.1 | Projeto WinUI compila, empacota e roda; se falhar, registrar motivo e fallback |
 | F0-12 | Implementar single-instance inicial com ativação por pasta | Redirecionamento acontece antes de criar janela; feito na fatia 0025 |
-| F0-19 | Validar single-instance com app registrado/empacotado | Clicar duas vezes no menu de contexto não abre duas instâncias; pendente de runtime/packaging |
+| F0-19 | Validar single-instance com app registrado/empacotado | Clicar duas vezes no menu de contexto nao abre duas instancias; pendente por sideload/developer mode desabilitado no ambiente atual |
 | F0-13 | Validar decode sem prender file handle | Foto exibida pode ser movida para `_deletadas_evydencia` sem `IOException` causada pelo app |
 | F0-14 | Criar `DisplayContext` | App calcula resolução física, DPI, área útil, rasterization scale e monitor atual |
 | F0-15 | Validar preview cache sem perda visual | Comparar original vs preview em tela 4K e decidir qualidade/formato |
 | F0-16 | Definir política de fonte da verdade | ADR decide relação entre sistema de arquivos, JSONL e SQLite |
 | F0-17 | Definir governança de build | ADR ou seção documenta `global.json`, `Directory.Build.props`, `Directory.Packages.props`, `NuGet.config`, `.editorconfig` e scripts |
 | F0-18 | Validar camada Application | Documento decide use cases e abstrações sem WinUI |
+| F0-20 | Implementar Launcher minimo e fallback HKCU dev | Launcher valida pasta e scripts HKCU instalam/removem Abrir Escolher Fotos; feito na fatia 0026 |
 
 ### Fase 1
 

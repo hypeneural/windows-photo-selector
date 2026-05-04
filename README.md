@@ -85,6 +85,12 @@ Build:
 .\tools\build.ps1
 ```
 
+Build x64:
+
+```powershell
+.\tools\build.ps1 -Platform x64
+```
+
 Testes:
 
 ```powershell
@@ -107,6 +113,13 @@ Benchmarks:
 
 ```powershell
 .\tools\benchmarks.ps1
+```
+
+Menu de contexto classico para desenvolvimento:
+
+```powershell
+.\tools\install-context-menu-dev.ps1 -Platform x64
+.\tools\uninstall-context-menu-dev.ps1
 ```
 
 ## Status atual
@@ -139,12 +152,14 @@ Estado ja validado:
 - delete de arquivo bloqueado/ausente tratado sem corromper contadores: `FileLocked`/`DeleteFailed` e `Missing`.
 - `Delete` e `Ctrl+Z` ligados ao viewer WinUI, chamando os use cases reais e atualizando foto/contadores.
 - single-instance inicial com `AppInstance`/`RedirectActivationToAsync` antes da criacao da janela.
+- `Launcher` minimo para receber pasta do Explorer, validar caminho e encaminhar para o app.
+- fallback HKCU de menu de contexto de desenvolvimento para clique em pasta e no fundo da pasta.
 
 Proximas fatias planejadas:
 
 - overlay temporizado, retry visual e polimento do fluxo de erro no viewer;
-- validar single-instance com app registrado/empacotado e Windows App Runtime 2.0 instalado;
-- menu de contexto do Explorer;
+- validar single-instance com MSIX registrado/instalado; no ambiente atual o registro loose package esta bloqueado por sideload/developer mode desabilitado;
+- menu moderno do Explorer com `ShellExtension`/`IExplorerCommand`;
 
 ## Documentacao principal
 
